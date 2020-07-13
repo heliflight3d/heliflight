@@ -45,7 +45,6 @@
 #include "flight/failsafe.h"
 
 #include "io/beeper.h"
-#include "io/dashboard.h"
 #include "io/gps.h"
 #include "io/motors.h"
 
@@ -343,17 +342,6 @@ void processRcStickPositions()
             return;
         }
     }
-
-#ifdef USE_DASHBOARD
-    if (rcSticks == THR_LO + YAW_CE + PIT_HI + ROL_LO) {
-        dashboardDisablePageCycling();
-    }
-
-    if (rcSticks == THR_LO + YAW_CE + PIT_HI + ROL_HI) {
-        dashboardEnablePageCycling();
-    }
-#endif
-
 }
 
 int32_t getRcStickDeflection(int32_t axis, uint16_t midrc) {
