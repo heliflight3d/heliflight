@@ -212,21 +212,18 @@ void servoMixer(void)
     }
 
     input[INPUT_STABILIZED_THROTTLE] = motor[0] - 1000 - 500;  // Since it derives from rcCommand or mincommand and must be [-500:+500]
+    input[INPUT_STABILIZED_COLLECTIVE] = rcCommand[COLLECTIVE];
 
     // center the RC input value around the RC middle value
-    // by subtracting the RC middle value from the RC input value, we get:
-    // data - middle = input
-    // 2000 - 1500 = +500
-    // 1500 - 1500 = 0
-    // 1000 - 1500 = -500
-    input[INPUT_RC_ROLL]     = rcData[ROLL]     - rxConfig()->midrc;
-    input[INPUT_RC_PITCH]    = rcData[PITCH]    - rxConfig()->midrc;
-    input[INPUT_RC_YAW]      = rcData[YAW]      - rxConfig()->midrc;
-    input[INPUT_RC_THROTTLE] = rcData[THROTTLE] - rxConfig()->midrc;
-    input[INPUT_RC_AUX1]     = rcData[AUX1]     - rxConfig()->midrc;
-    input[INPUT_RC_AUX2]     = rcData[AUX2]     - rxConfig()->midrc;
-    input[INPUT_RC_AUX3]     = rcData[AUX3]     - rxConfig()->midrc;
-    input[INPUT_RC_AUX4]     = rcData[AUX4]     - rxConfig()->midrc;
+    input[INPUT_RC_ROLL]       = rcData[ROLL]       - rxConfig()->midrc;
+    input[INPUT_RC_PITCH]      = rcData[PITCH]      - rxConfig()->midrc;
+    input[INPUT_RC_YAW]        = rcData[YAW]        - rxConfig()->midrc;
+    input[INPUT_RC_THROTTLE]   = rcData[THROTTLE]   - rxConfig()->midrc;
+    input[INPUT_RC_COLLECTIVE] = rcData[COLLECTIVE] - rxConfig()->midrc;
+    input[INPUT_RC_AUX1]       = rcData[AUX1]       - rxConfig()->midrc;
+    input[INPUT_RC_AUX2]       = rcData[AUX2]       - rxConfig()->midrc;
+    input[INPUT_RC_AUX3]       = rcData[AUX3]       - rxConfig()->midrc;
+    input[INPUT_RC_AUX4]       = rcData[AUX4]       - rxConfig()->midrc;
 
     for (int i = 0; i < MAX_SUPPORTED_SERVOS; i++) {
         servo[i] = 0;
