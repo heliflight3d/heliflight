@@ -481,12 +481,24 @@ void pidInitConfig(const pidProfile_t *pidProfile)
     } else {
         feedForwardTransition = 100.0f / pidProfile->feedForwardTransition;
     }
-    for (int axis = FD_ROLL; axis <= FD_YAW; axis++) {
-        pidCoefficient[axis].Kp = PTERM_SCALE * pidProfile->pid[axis].P;
-        pidCoefficient[axis].Ki = ITERM_SCALE * pidProfile->pid[axis].I;
-        pidCoefficient[axis].Kd = DTERM_SCALE * pidProfile->pid[axis].D;
-        pidCoefficient[axis].Kf = FEEDFORWARD_SCALE * (pidProfile->pid[axis].F / 100.0f);
-    }
+
+    // Roll axis
+    pidCoefficient[FD_ROLL].Kp = ROLL_PTERM_SCALE * pidProfile->pid[FD_ROLL].P;
+    pidCoefficient[FD_ROLL].Ki = ROLL_ITERM_SCALE * pidProfile->pid[FD_ROLL].I;
+    pidCoefficient[FD_ROLL].Kd = ROLL_DTERM_SCALE * pidProfile->pid[FD_ROLL].D;
+    pidCoefficient[FD_ROLL].Kf = ROLL_FF_SCALE    * pidProfile->pid[FD_ROLL].F;
+
+    // Pitch axis
+    pidCoefficient[FD_PITCH].Kp = PITCH_PTERM_SCALE * pidProfile->pid[FD_PITCH].P;
+    pidCoefficient[FD_PITCH].Ki = PITCH_ITERM_SCALE * pidProfile->pid[FD_PITCH].I;
+    pidCoefficient[FD_PITCH].Kd = PITCH_DTERM_SCALE * pidProfile->pid[FD_PITCH].D;
+    pidCoefficient[FD_PITCH].Kf = PITCH_FF_SCALE    * pidProfile->pid[FD_PITCH].F;
+
+    // Yaw axis
+    pidCoefficient[FD_YAW].Kp = YAW_PTERM_SCALE * pidProfile->pid[FD_YAW].P;
+    pidCoefficient[FD_YAW].Ki = YAW_ITERM_SCALE * pidProfile->pid[FD_YAW].I;
+    pidCoefficient[FD_YAW].Kd = YAW_DTERM_SCALE * pidProfile->pid[FD_YAW].D;
+    pidCoefficient[FD_YAW].Kf = YAW_FF_SCALE    * pidProfile->pid[FD_YAW].F;
 
     levelGain = pidProfile->pid[PID_LEVEL].P / 10.0f;
 
@@ -525,10 +537,12 @@ void pidInitConfig(const pidProfile_t *pidProfile)
     acLimit = (float)pidProfile->abs_control_limit;
     acErrorLimit = (float)pidProfile->abs_control_error_limit;
     acCutoff = (float)pidProfile->abs_control_cutoff;
-    for (int axis = FD_ROLL; axis <= FD_YAW; axis++) {
-        float iCorrection = -acGain * PTERM_SCALE / ITERM_SCALE * pidCoefficient[axis].Kp;
-        pidCoefficient[axis].Ki = MAX(0.0f, pidCoefficient[axis].Ki + iCorrection);
-    }
+    float rollCorrection  = -acGain * ROLL_PTERM_SCALE  / ROLL_ITERM_SCALE  * pidCoefficient[FD_ROLL].Kp;
+    float pitchCorrection = -acGain * PITCH_PTERM_SCALE / PITCH_ITERM_SCALE * pidCoefficient[FD_PITCH].Kp;
+    float yawCorrection   = -acGain * YAW_PTERM_SCALE   / YAW_ITERM_SCALE   * pidCoefficient[FD_YAW].Kp;
+    pidCoefficient[FD_ROLL].Ki  = MAX(0.0f, pidCoefficient[FD_ROLL].Ki  + rollCorrection);
+    pidCoefficient[FD_PITCH].Ki = MAX(0.0f, pidCoefficient[FD_PITCH].Ki + pitchCorrection);
+    pidCoefficient[FD_YAW].Ki   = MAX(0.0f, pidCoefficient[FD_YAW].Ki   + yawCorrection);
 #endif
 
 #ifdef USE_DYN_LPF
