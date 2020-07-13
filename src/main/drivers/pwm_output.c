@@ -314,7 +314,8 @@ void servoDevInit(const servoDevConfig_t *servoConfig)
         IOConfigGPIOAF(servos[servoIndex].io, IOCFG_AF_PP, timer->alternateFunction);
 #endif
 
-        pwmOutConfig(&servos[servoIndex].channel, timer, PWM_TIMER_1MHZ, PWM_TIMER_1MHZ / servoConfig->servoPwmRate, servoConfig->servoCenterPulse, 0);
+        // HF3D: Initialize with zero output to support servos with different center pulse widths
+        pwmOutConfig(&servos[servoIndex].channel, timer, PWM_TIMER_1MHZ, PWM_TIMER_1MHZ / servoConfig->servoPwmRate, 0, 0);
         servos[servoIndex].enabled = true;
     }
 }

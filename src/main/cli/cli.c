@@ -2113,8 +2113,8 @@ static void cliServo(const char *cmdName, char *cmdline)
 
         if (
             args[MIN] > args[MAX] ||
-            args[MIN] < PWM_PULSE_MIN || args[MIN] > PWM_PULSE_MAX ||
-            args[MAX] < PWM_PULSE_MIN || args[MAX] > PWM_PULSE_MAX ||
+            args[MIN] < PWM_SERVO_PULSE_MIN || args[MIN] > PWM_SERVO_PULSE_MAX ||
+            args[MAX] < PWM_SERVO_PULSE_MIN || args[MAX] > PWM_SERVO_PULSE_MAX ||
             args[MID] < args[MIN] || args[MID] > args[MAX] ||
             args[RATE] < -1000 || args[RATE] > 1000 ||
             args[FREQ] < -1 || args[FREQ] > 500
