@@ -56,11 +56,10 @@
 #include "drivers/motor.h"
 
 #include "fc/rc_controls.h"
+#include "fc/rc_modes.h"
 #include "fc/runtime_config.h"
 
 #include "flight/mixer.h"
-
-#include "io/rcdevice_cam.h"
 
 #include "pg/pg.h"
 #include "pg/pg_ids.h"
@@ -1180,9 +1179,6 @@ uint16_t cmsHandleKeyWithRepeat(displayPort_t *pDisplay, cms_key_e key, int repe
 static void cmsUpdate(uint32_t currentTimeUs)
 {
     if (IS_RC_MODE_ACTIVE(BOXPARALYZE)
-#ifdef USE_RCDEVICE
-        || rcdeviceInMenu
-#endif
 #ifdef USE_USB_CDC_HID
         || (getBatteryCellCount() == 0 && usbDevConfig()->type == COMPOSITE)
 #endif

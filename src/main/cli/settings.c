@@ -89,7 +89,6 @@
 #include "pg/vcd.h"
 #include "pg/usb.h"
 #include "pg/sdio.h"
-#include "pg/rcdevice.h"
 #include "pg/stats.h"
 #include "pg/board.h"
 
@@ -1431,13 +1430,6 @@ const clivalue_t valueTable[] = {
 // PG_FLASH_CONFIG
 #ifdef USE_FLASH_CHIP
     { "flash_spi_bus", VAR_UINT8 | HARDWARE_VALUE, .config.minmaxUnsigned = { 0, SPIDEV_COUNT }, PG_FLASH_CONFIG, offsetof(flashConfig_t, spiDevice) },
-#endif
-// RCDEVICE
-#ifdef USE_RCDEVICE
-    { "rcdevice_init_dev_attempts", VAR_UINT8 | MASTER_VALUE, .config.minmaxUnsigned = { 0, 10 }, PG_RCDEVICE_CONFIG, offsetof(rcdeviceConfig_t, initDeviceAttempts) },
-    { "rcdevice_init_dev_attempt_interval", VAR_UINT32 | MASTER_VALUE, .config.u32Max = 5000, PG_RCDEVICE_CONFIG, offsetof(rcdeviceConfig_t, initDeviceAttemptInterval) },
-    { "rcdevice_protocol_version", VAR_UINT8 | MASTER_VALUE, .config.minmax = { 0, 1 }, PG_RCDEVICE_CONFIG, offsetof(rcdeviceConfig_t, protocolVersion) },
-    { "rcdevice_feature", VAR_UINT16 | MASTER_VALUE, .config.minmaxUnsigned = {0, 65535}, PG_RCDEVICE_CONFIG, offsetof(rcdeviceConfig_t, feature) },
 #endif
 
 // PG_GYRO_DEVICE_CONFIG

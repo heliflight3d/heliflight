@@ -269,12 +269,6 @@ void initActiveBoxIds(void)
     }
 #endif
 
-#ifdef USE_RCDEVICE
-    BME(BOXCAMERA1);
-    BME(BOXCAMERA2);
-    BME(BOXCAMERA3);
-#endif
-
     BME(BOXPARALYZE);
 
 #ifdef USE_PINIOBOX

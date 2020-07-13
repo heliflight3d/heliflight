@@ -108,7 +108,6 @@
 #include "io/motors.h"
 #include "io/pidaudio.h"
 #include "io/piniobox.h"
-#include "io/rcdevice_cam.h"
 #include "io/serial.h"
 #include "io/servos.h"
 
@@ -864,10 +863,6 @@ void init(void)
 #endif
 
     batteryInit(); // always needs doing, regardless of features.
-
-#ifdef USE_RCDEVICE
-    rcdeviceInit();
-#endif // USE_RCDEVICE
 
 #ifdef USE_PERSISTENT_STATS
     statsInit();

@@ -51,7 +51,6 @@ static targetSerialPortFunction_t targetSerialPortFunction[] = {
 #ifdef EXUAVF4PRO
 static targetSerialPortFunction_t targetSerialPortFunction[] = {
     { SERIAL_PORT_USART1, FUNCTION_TELEMETRY_SMARTPORT },
-    { SERIAL_PORT_UART4,  FUNCTION_RCDEVICE },
     { SERIAL_PORT_USART6, FUNCTION_RX_SERIAL },
 };
 #endif
