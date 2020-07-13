@@ -22,6 +22,9 @@
 
 #include "common/utils.h"
 
+// HF3D: These can be changed once Configurator is updated.
+//#define FC_FIRMWARE_NAME            "Heliflight"
+//#define FC_FIRMWARE_IDENTIFIER      "HLFL"
 #define FC_FIRMWARE_NAME            "Betaflight"
 #define FC_FIRMWARE_IDENTIFIER      "BTFL"
 #define FC_VERSION_MAJOR            4  // increment when a major release is made (big new feature, etc)
