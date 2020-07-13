@@ -118,7 +118,6 @@ void targetConfiguration(void)
     osdElementConfigMutable()->item_pos[OSD_MAIN_BATT_VOLTAGE] = OSD_POS(23, 10) | OSD_PROFILE_1_FLAG;
     osdElementConfigMutable()->item_pos[OSD_ITEM_TIMER_2]      = OSD_POS(2, 10)  | OSD_PROFILE_1_FLAG;
     osdElementConfigMutable()->item_pos[OSD_FLYMODE]           = OSD_POS(17, 10) | OSD_PROFILE_1_FLAG;
-    osdElementConfigMutable()->item_pos[OSD_VTX_CHANNEL]       = OSD_POS(10, 10) | OSD_PROFILE_1_FLAG;
     osdElementConfigMutable()->item_pos[OSD_RSSI_VALUE]         &= ~OSD_PROFILE_1_FLAG;
     osdElementConfigMutable()->item_pos[OSD_ITEM_TIMER_1]       &= ~OSD_PROFILE_1_FLAG;
     osdElementConfigMutable()->item_pos[OSD_THROTTLE_POS]       &= ~OSD_PROFILE_1_FLAG;

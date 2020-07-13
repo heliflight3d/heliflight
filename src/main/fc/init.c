@@ -48,7 +48,6 @@
 #include "drivers/bus_quadspi.h"
 #include "drivers/bus_spi.h"
 #include "drivers/buttons.h"
-#include "drivers/camera_control.h"
 #include "drivers/compass/compass.h"
 #include "drivers/dma.h"
 #include "drivers/exti.h"
@@ -77,9 +76,6 @@
 #ifdef USE_USB_MSC
 #include "drivers/usb_msc.h"
 #endif
-#include "drivers/vtx_common.h"
-#include "drivers/vtx_rtc6705.h"
-#include "drivers/vtx_table.h"
 
 #include "fc/board_info.h"
 #include "config/config.h"
@@ -115,11 +111,6 @@
 #include "io/rcdevice_cam.h"
 #include "io/serial.h"
 #include "io/servos.h"
-#include "io/vtx.h"
-#include "io/vtx_control.h"
-#include "io/vtx_rtc6705.h"
-#include "io/vtx_smartaudio.h"
-#include "io/vtx_tramp.h"
 
 #include "msc/emfat_file.h"
 #ifdef USE_PERSISTENT_MSC_RTC
@@ -149,7 +140,6 @@
 #include "pg/rx_spi.h"
 #include "pg/sdcard.h"
 #include "pg/vcd.h"
-#include "pg/vtx_io.h"
 
 #include "rx/rx.h"
 #include "rx/spektrum.h"
@@ -693,14 +683,6 @@ void init(void)
 #endif
 
 
-#ifdef USE_VTX_RTC6705
-    bool useRTC6705 = rtc6705IOInit(vtxIOConfig());
-#endif
-
-#ifdef USE_CAMERA_CONTROL
-    cameraControlInit();
-#endif
-
 // XXX These kind of code should goto target/config.c?
 // XXX And these no longer work properly as FEATURE_RANGEFINDER does control HCSR04 runtime configuration.
 #if defined(RANGEFINDER_HCSR04_SOFTSERIAL2_EXCLUSIVE) && defined(USE_RANGEFINDER_HCSR04) && defined(USE_SOFTSERIAL2)
@@ -865,33 +847,6 @@ void init(void)
 #ifdef USE_BARO
     baroStartCalibration();
 #endif
-
-#if defined(USE_VTX_COMMON) || defined(USE_VTX_CONTROL)
-    vtxTableInit();
-#endif
-
-#ifdef USE_VTX_CONTROL
-    vtxControlInit();
-
-#if defined(USE_VTX_COMMON)
-    vtxCommonInit();
-#endif
-
-#ifdef USE_VTX_SMARTAUDIO
-    vtxSmartAudioInit();
-#endif
-
-#ifdef USE_VTX_TRAMP
-    vtxTrampInit();
-#endif
-
-#ifdef USE_VTX_RTC6705
-    if (!vtxCommonDevice() && useRTC6705) { // external VTX takes precedence when configured.
-        vtxRTC6705Init();
-    }
-#endif
-
-#endif // VTX_CONTROL
 
 #ifdef USE_TIMER
     // start all timers

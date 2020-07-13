@@ -86,7 +86,7 @@ static const box_t boxes[CHECKBOX_ITEM_COUNT] = {
     { BOXPREARM, "PREARM", 36 },
     { BOXBEEPGPSCOUNT, "BEEP GPS SATELLITE COUNT", 37 },
 //    { BOX3DONASWITCH, "3D ON A SWITCH", 38 }, (removed)
-    { BOXVTXPITMODE, "VTX PIT MODE", 39 },
+//    { BOXVTXPITMODE, "VTX PIT MODE", 39 }, (removed)
     { BOXUSER1, "USER1", 40 },
     { BOXUSER2, "USER2", 41 },
     { BOXUSER3, "USER3", 42 },
@@ -95,7 +95,7 @@ static const box_t boxes[CHECKBOX_ITEM_COUNT] = {
     { BOXPARALYZE, "PARALYZE", 45 },
     { BOXGPSRESCUE, "GPS RESCUE", 46 },
     { BOXACROTRAINER, "ACRO TRAINER", 47 },
-    { BOXVTXCONTROLDISABLE, "DISABLE VTX CONTROL", 48},
+//    { BOXVTXCONTROLDISABLE, "DISABLE VTX CONTROL", 48}, (removed)
 };
 
 // mask of enabled IDs, calculated on startup based on enabled features. boxId_e is used as bit index
@@ -273,11 +273,6 @@ void initActiveBoxIds(void)
     BME(BOXCAMERA1);
     BME(BOXCAMERA2);
     BME(BOXCAMERA3);
-#endif
-
-#if defined(USE_VTX_SMARTAUDIO) || defined(USE_VTX_TRAMP)
-    BME(BOXVTXPITMODE);
-    BME(BOXVTXCONTROLDISABLE);
 #endif
 
     BME(BOXPARALYZE);

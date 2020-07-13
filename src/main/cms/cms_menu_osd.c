@@ -97,9 +97,6 @@ const OSD_Entry menuOsdActiveElemsEntries[] =
     {"FLY MODE",           OME_VISIBLE, NULL, &osdConfig_item_pos[OSD_FLYMODE], DYNAMIC},
     {"NAME",               OME_VISIBLE, NULL, &osdConfig_item_pos[OSD_CRAFT_NAME], DYNAMIC},
     {"THROTTLE",           OME_VISIBLE, NULL, &osdConfig_item_pos[OSD_THROTTLE_POS], DYNAMIC},
-#ifdef USE_VTX_CONTROL
-    {"VTX CHAN",           OME_VISIBLE, NULL, &osdConfig_item_pos[OSD_VTX_CHANNEL], DYNAMIC},
-#endif // VTX
     {"CURRENT (A)",        OME_VISIBLE, NULL, &osdConfig_item_pos[OSD_CURRENT_DRAW], DYNAMIC},
     {"USED MAH",           OME_VISIBLE, NULL, &osdConfig_item_pos[OSD_MAH_DRAWN], DYNAMIC},
 #ifdef USE_GPS

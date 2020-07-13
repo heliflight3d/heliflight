@@ -143,9 +143,6 @@
 #define SDCARD_SPI_CS_PIN                   PC3
 #define SPI3_TX_DMA_OPT                     1  // DMA 1 Stream 7 Channel 0
 
-#define USE_VTX_RTC6705
-#define USE_VTX_RTC6705_SOFTSPI
-
 #define RTC6705_SPI_MOSI_PIN                PB0  // Shared with PWM8
 #define RTC6705_CS_PIN                      PB6  // Shared with PWM5
 #define RTC6705_SPICLK_PIN                  PB1  // Shared with PWM7

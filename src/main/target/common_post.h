@@ -24,10 +24,6 @@
 
 #include "build/version.h"
 
-#if defined(USE_VTX_RTC6705_SOFTSPI)
-#define USE_VTX_RTC6705
-#endif
-
 #ifndef USE_DSHOT
 #undef USE_ESC_SENSOR
 #endif
@@ -119,8 +115,6 @@
 #undef USE_SPEKTRUM_REAL_RSSI
 #undef USE_SPEKTRUM_FAKE_RSSI
 #undef USE_SPEKTRUM_RSSI_PERCENT_CONVERSION
-#undef USE_SPEKTRUM_VTX_CONTROL
-#undef USE_SPEKTRUM_VTX_TELEMETRY
 #undef USE_SPEKTRUM_CMS_TELEMETRY
 #undef USE_TELEMETRY_SRXL
 #endif
@@ -131,15 +125,6 @@
 
 #if !defined(USE_TELEMETRY_SMARTPORT) && !defined(USE_TELEMETRY_CRSF)
 #undef USE_MSP_OVER_TELEMETRY
-#endif
-
-/* If either VTX_CONTROL or VTX_COMMON is undefined then remove common code and device drivers */
-#if !defined(USE_VTX_COMMON) || !defined(USE_VTX_CONTROL)
-#undef USE_VTX_COMMON
-#undef USE_VTX_CONTROL
-#undef USE_VTX_TRAMP
-#undef USE_VTX_SMARTAUDIO
-#undef USE_VTX_TABLE
 #endif
 
 #if defined(USE_RX_FRSKY_SPI_D) || defined(USE_RX_FRSKY_SPI_X) || defined(USE_RX_REDPINE_SPI)

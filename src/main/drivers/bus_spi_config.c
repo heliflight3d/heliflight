@@ -83,10 +83,6 @@ void spiPreinit(void)
     sdcard_preInit(sdcardConfig());
 #endif
 
-#if defined(RTC6705_CS_PIN) && !defined(USE_VTX_RTC6705_SOFTSPI) // RTC6705 soft SPI initialisation handled elsewhere.
-    // XXX Waiting for "RTC6705 cleanup #7114" to be done
-#endif
-
 #ifdef USE_FLASH_CHIP
     flashPreInit(flashConfig());
 #endif

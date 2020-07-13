@@ -132,7 +132,6 @@
 #define SPI3_MOSI_PIN           PB5
 
 #if !defined(SPRACINGF4EVODG)
-#define USE_VTX_RTC6705
 
 #define RTC6705_CS_PIN          SPI3_NSS_PIN
 #define RTC6705_SPI_INSTANCE    SPI3

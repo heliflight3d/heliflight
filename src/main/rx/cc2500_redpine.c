@@ -42,7 +42,6 @@
 #include "drivers/system.h"
 #include "drivers/time.h"
 #include "fc/runtime_config.h"
-#include "io/vtx.h"
 #include "pg/rx.h"
 #include "pg/rx_spi.h"
 #include "pg/rx_spi_cc2500.h"
@@ -400,10 +399,7 @@ void redpineSetRcData(uint16_t *rcData, const uint8_t *packet)
 {
     if (packet[CHANNEL_START] == VTX_STATUS_FRAME && packet[CHANNEL_START + 1] == 0) {
         if (!ARMING_FLAG(ARMED)) {
-            vtxSettingsConfigMutable()->band = packet[5] + 1;
-            vtxSettingsConfigMutable()->channel = packet[6];
-            vtxSettingsConfigMutable()->power = packet[7];
-            saveConfigAndNotify();
+            // HF3D: VTX removed
         }
     } else {
         uint16_t channelValue;

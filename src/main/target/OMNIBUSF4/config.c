@@ -33,7 +33,6 @@
 #include "pg/pg.h"
 
 #ifdef SYNERGYF4
-#include "io/vtx.h"
 #include "io/ledstrip.h"
 #include "config/config.h"
 #include "pg/piniobox.h"
@@ -47,13 +46,11 @@
 
 static targetSerialPortFunction_t targetSerialPortFunction[] = {
     { SERIAL_PORT_USART1, FUNCTION_RX_SERIAL },
-    { SERIAL_PORT_USART3,  FUNCTION_VTX_SMARTAUDIO },
 };
 #endif
 #ifdef EXUAVF4PRO
 static targetSerialPortFunction_t targetSerialPortFunction[] = {
     { SERIAL_PORT_USART1, FUNCTION_TELEMETRY_SMARTPORT },
-    { SERIAL_PORT_USART3, FUNCTION_VTX_TRAMP },
     { SERIAL_PORT_UART4,  FUNCTION_RCDEVICE },
     { SERIAL_PORT_USART6, FUNCTION_RX_SERIAL },
 };
@@ -71,8 +68,6 @@ void targetConfiguration(void)
 #endif
 #ifdef SYNERGYF4
     pinioBoxConfigMutable()->permanentId[0] = 40;
-    vtxSettingsConfigMutable()->pitModeFreq = 0;
-    ledStripStatusModeConfigMutable()->ledConfigs[0] = DEFINE_LED(0, 0, 0, 0, LF(COLOR), LO(VTX), 0);
     targetSerialPortFunctionConfig(targetSerialPortFunction, ARRAYLEN(targetSerialPortFunction));
     motorConfigMutable()->dev.motorPwmProtocol = PWM_TYPE_DSHOT600;
     pidConfigMutable()->pid_process_denom = 1; // 8kHz PID

@@ -43,9 +43,6 @@
 #include "cms/cms_menu_power.h"
 #include "cms/cms_menu_saveexit.h"
 
-// VTX supplied menus
-
-#include "cms/cms_menu_vtx_common.h"
 
 #include "common/printf.h"
 
@@ -77,11 +74,6 @@ static const OSD_Entry menuFeaturesEntries[] =
 #if defined(USE_BLACKBOX)
     {"BLACKBOX", OME_Submenu, cmsMenuChange, &cmsx_menuBlackbox, 0},
 #endif
-#if defined(USE_VTX_CONTROL)
-#if defined(USE_VTX_RTC6705) || defined(USE_VTX_SMARTAUDIO) || defined(USE_VTX_TRAMP)
-    {"VTX", OME_Funcall, cmsSelectVtx, NULL, 0},
-#endif
-#endif // VTX_CONTROL
 #ifdef USE_LED_STRIP
     {"LED STRIP", OME_Submenu, cmsMenuChange, &cmsx_menuLedstrip, 0},
 #endif // LED_STRIP

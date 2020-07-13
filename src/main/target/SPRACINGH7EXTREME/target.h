@@ -172,10 +172,6 @@
 #define MAX7456_SPI_INSTANCE    SPI4
 #define MAX7456_SPI_CS_PIN      SPI4_NSS_PIN
 
-#define USE_VTX_RTC6705
-#define USE_VTX_RTC6705_SOFTSPI
-#define VTX_RTC6705_OPTIONAL    // VTX/OSD board is OPTIONAL
-
 #define RTC6705_POWER_PIN                   PB1  // J14-6
 #define RTC6705_CS_PIN                      PB0  // J14-5
 #define RTC6705_SPICLK_PIN                  PA7  // J14-4

@@ -123,12 +123,6 @@ typedef enum {
 #ifdef USE_CMS
     TASK_CMS,
 #endif
-#ifdef USE_VTX_CONTROL
-    TASK_VTXCTRL,
-#endif
-#ifdef USE_CAMERA_CONTROL
-    TASK_CAMCTRL,
-#endif
 
 #ifdef USE_RCDEVICE
     TASK_RCDEVICE,

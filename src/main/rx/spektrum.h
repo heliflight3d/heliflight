@@ -35,6 +35,16 @@
 
 #define SPEKTRUM_BAUDRATE                115200
 
+//VTX control frame bits and pieces
+//  HF3D:  Moved from spektrum_vtx_control.h to here so frames can be handled properly
+#define SPEKTRUM_VTX_CONTROL_FRAME_MASK 0xf000f000
+#define SPEKTRUM_VTX_CONTROL_FRAME      0xe000e000
+
+#define SPEKTRUM_VTX_CONTROL_1          (SPEK_FRAME_SIZE - 4)
+#define SPEKTRUM_VTX_CONTROL_2          (SPEK_FRAME_SIZE - 3)
+#define SPEKTRUM_VTX_CONTROL_3          (SPEK_FRAME_SIZE - 2)
+#define SPEKTRUM_VTX_CONTROL_4          (SPEK_FRAME_SIZE - 1)
+#define SPEKTRUM_VTX_CONTROL_SIZE       4
 
 // Spektrum system type values
 #define SPEKTRUM_DSM2_22                   0x01

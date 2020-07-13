@@ -29,7 +29,6 @@
 #include "config/config.h"
 #include "drivers/pwm_output.h"
 #include "sensors/gyro.h"
-#include "io/vtx.h"
 #include "io/ledstrip.h"
 #include "config/config.h"
 #include "pg/piniobox.h"

@@ -37,7 +37,6 @@
 
 #include "rx/srxl2.h"
 #include "rx/srxl2_types.h"
-#include "io/spektrum_vtx_control.h"
 
 #ifndef SRXL2_DEBUG
 #define SRXL2_DEBUG 0
@@ -213,28 +212,6 @@ bool srxl2ProcessControlData(const Srxl2Header* header, rxRuntimeState_t *rxRunt
         globalResult |= RX_FRAME_FAILSAFE;
         setRssiDirect(0, RSSI_SOURCE_RX_PROTOCOL);
         // DEBUG_PRINTF("fs channel data\r\n");
-    } break;
-
-    case VTXData: {
-#if defined(USE_SPEKTRUM_VTX_CONTROL) && defined(USE_VTX_COMMON)
-        Srxl2VtxData *vtxData = (Srxl2VtxData*)(controlData + 1);
-        DEBUG_PRINTF("vtx data\r\n");
-        DEBUG_PRINTF("vtx band: %x\r\n", vtxData->band);
-        DEBUG_PRINTF("vtx channel: %x\r\n", vtxData->channel);
-        DEBUG_PRINTF("vtx pit: %x\r\n", vtxData->pit);
-        DEBUG_PRINTF("vtx power: %x\r\n", vtxData->power);
-        DEBUG_PRINTF("vtx powerDec: %x\r\n", vtxData->powerDec);
-        DEBUG_PRINTF("vtx region: %x\r\n", vtxData->region);
-        // Pack data as it was used before srxl2 to use existing functions.
-        // Get the VTX control bytes in a frame
-        uint32_t vtxControl =   (0xE0 << 24) | (0xE0 << 8) |
-                                ((vtxData->band & 0x07) << 21) |
-                                ((vtxData->channel & 0x0F) << 16) |
-                                ((vtxData->pit & 0x01) << 4) |
-                                ((vtxData->region & 0x01) << 3) |
-                                ((vtxData->power & 0x07));
-        spektrumHandleVtxControl(vtxControl);
-#endif
     } break;
     }
 

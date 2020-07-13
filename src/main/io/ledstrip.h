@@ -33,7 +33,7 @@
 #define LED_MODE_COUNT                  6
 #define LED_DIRECTION_COUNT             6
 #define LED_BASEFUNCTION_COUNT          7
-#define LED_OVERLAY_COUNT               6
+#define LED_OVERLAY_COUNT               5
 #define LED_SPECIAL_COLOR_COUNT        11
 
 #define LED_POS_OFFSET                  0
@@ -140,7 +140,6 @@ typedef enum {
     LED_OVERLAY_THROTTLE,
     LED_OVERLAY_LARSON_SCANNER,
     LED_OVERLAY_BLINK,
-    LED_OVERLAY_VTX,
     LED_OVERLAY_INDICATOR,
     LED_OVERLAY_WARNING
 } ledOverlayId_e;

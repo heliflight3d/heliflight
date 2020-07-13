@@ -36,14 +36,12 @@
 #include "config/feature.h"
 
 #include "drivers/accgyro/accgyro.h"
-#include "drivers/camera_control.h"
 #include "drivers/compass/compass.h"
 #include "drivers/sensor.h"
 #include "drivers/serial.h"
 #include "drivers/serial_usb_vcp.h"
 #include "drivers/stack_check.h"
 #include "drivers/usb_io.h"
-#include "drivers/vtx_common.h"
 
 #include "config/config.h"
 #include "fc/core.h"
@@ -64,10 +62,8 @@
 #include "io/ledstrip.h"
 #include "io/piniobox.h"
 #include "io/serial.h"
-#include "io/vtx_tramp.h" // Will be gone
 #include "io/rcdevice_cam.h"
 #include "io/usb_cdc_hid.h"
-#include "io/vtx.h"
 
 #include "msp/msp.h"
 #include "msp/msp_serial.h"
@@ -220,17 +216,6 @@ static void taskTelemetry(timeUs_t currentTimeUs)
 }
 #endif
 
-#ifdef USE_CAMERA_CONTROL
-static void taskCameraControl(uint32_t currentTime)
-{
-    if (ARMING_FLAG(ARMED)) {
-        return;
-    }
-
-    cameraControlProcess(currentTime);
-}
-#endif
-
 void tasksInit(void)
 {
     schedulerInit();
@@ -356,16 +341,6 @@ void tasksInit(void)
 #endif
 #endif
 
-#ifdef USE_VTX_CONTROL
-#if defined(USE_VTX_RTC6705) || defined(USE_VTX_SMARTAUDIO) || defined(USE_VTX_TRAMP)
-    setTaskEnabled(TASK_VTXCTRL, true);
-#endif
-#endif
-
-#ifdef USE_CAMERA_CONTROL
-    setTaskEnabled(TASK_CAMCTRL, true);
-#endif
-
 #ifdef USE_RCDEVICE
     setTaskEnabled(TASK_RCDEVICE, rcdeviceIsEnabled());
 #endif
@@ -460,16 +435,8 @@ task_t tasks[TASK_COUNT] = {
     [TASK_CMS] = DEFINE_TASK("CMS", NULL, NULL, cmsHandler, TASK_PERIOD_HZ(20), TASK_PRIORITY_LOW),
 #endif
 
-#ifdef USE_VTX_CONTROL
-    [TASK_VTXCTRL] = DEFINE_TASK("VTXCTRL", NULL, NULL, vtxUpdate, TASK_PERIOD_HZ(5), TASK_PRIORITY_IDLE),
-#endif
-
 #ifdef USE_RCDEVICE
     [TASK_RCDEVICE] = DEFINE_TASK("RCDEVICE", NULL, NULL, rcdeviceUpdate, TASK_PERIOD_HZ(20), TASK_PRIORITY_MEDIUM),
-#endif
-
-#ifdef USE_CAMERA_CONTROL
-    [TASK_CAMCTRL] = DEFINE_TASK("CAMCTRL", NULL, NULL, taskCameraControl, TASK_PERIOD_HZ(5), TASK_PRIORITY_IDLE),
 #endif
 
 #ifdef USE_ADC_INTERNAL

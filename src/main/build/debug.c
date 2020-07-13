@@ -68,7 +68,7 @@ const char * const debugModeNames[DEBUG_COUNT] = {
     "SDIO",
     "CURRENT_SENSOR",
     "USB",
-    "SMARTAUDIO",
+    "UNUSED_35",
     "RTH",
     "ITERM_RELAX",
     "ACRO_TRAINER",

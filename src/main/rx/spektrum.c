@@ -41,7 +41,6 @@
 #include "config/config.h"
 
 #include "io/spektrum_rssi.h"
-#include "io/spektrum_vtx_control.h"
 
 #include "telemetry/telemetry.h"
 #include "telemetry/srxl.h"
@@ -137,9 +136,6 @@ static uint8_t spektrumFrameStatus(rxRuntimeState_t *rxRuntimeState)
         // Handle VTX control frame.
         if ((vtxControl & SPEKTRUM_VTX_CONTROL_FRAME_MASK) == SPEKTRUM_VTX_CONTROL_FRAME &&
             (spekFrame[2] & 0x80) == 0 )  {
-#if defined(USE_SPEKTRUM_VTX_CONTROL) && defined(USE_VTX_COMMON)
-            spektrumHandleVtxControl(vtxControl);
-#endif
             spektrumRcDataSize = SPEK_FRAME_SIZE - SPEKTRUM_VTX_CONTROL_SIZE;
         } else {
             spektrumRcDataSize = SPEK_FRAME_SIZE;
