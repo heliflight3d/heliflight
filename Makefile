@@ -221,6 +221,9 @@ ifneq ($(RESULT),0)
 CCACHE :=
 endif
 
+# Make parallelism
+JFLAG ?= -j 8
+
 # Tool names
 CROSS_CC    := $(CCACHE) $(ARM_SDK_PREFIX)gcc
 CROSS_CXX   := $(CCACHE) $(ARM_SDK_PREFIX)g++
@@ -501,7 +504,7 @@ test_clean:
 
 ## <TARGET>_clean    : clean up one specific target (alias for above)
 $(TARGETS_CLEAN):
-	$(V0) $(MAKE) -j TARGET=$(subst _clean,,$@) clean
+	$(V0) $(MAKE) $(JFLAG) TARGET=$(subst _clean,,$@) clean
 
 ## clean_all         : clean all valid targets
 clean_all: $(TARGETS_CLEAN) test_clean
@@ -555,10 +558,10 @@ zip:
 	$(V0) zip $(TARGET_ZIP) $(TARGET_HEX)
 
 binary:
-	$(V0) $(MAKE) -j $(TARGET_BIN)
+	$(V0) $(MAKE) $(JFLAG) $(TARGET_BIN)
 
 hex:
-	$(V0) $(MAKE) -j $(TARGET_HEX)
+	$(V0) $(MAKE) $(JFLAG) $(TARGET_HEX)
 
 unbrick_$(TARGET): $(TARGET_HEX)
 	$(V0) stty -F $(SERIAL_DEVICE) raw speed 115200 -crtscts cs8 -parenb -cstopb -ixon
