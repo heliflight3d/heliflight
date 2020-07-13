@@ -98,4 +98,5 @@ const char * const debugModeNames[DEBUG_COUNT] = {
     DEBUG_NAME(BLACKBOX_OUTPUT),
     DEBUG_NAME(GYRO_SAMPLE),
     DEBUG_NAME(RX_TIMING),
+    DEBUG_NAME(FREQ_SENSOR),
 };

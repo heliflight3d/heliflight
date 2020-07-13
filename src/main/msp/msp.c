@@ -63,6 +63,7 @@
 #include "drivers/serial_escserial.h"
 #include "drivers/system.h"
 #include "drivers/usb_msc.h"
+#include "drivers/freq.h"
 
 #include "fc/board_info.h"
 #include "fc/controlrate_profile.h"
@@ -1117,6 +1118,15 @@ static bool mspProcessOutCommand(int16_t cmdMSP, sbuf_t *dst)
                     invalidPct = getDshotTelemetryMotorInvalidPercent(i);
                 }
 #endif
+            }
+#endif
+
+#ifdef USE_FREQ_SENSOR
+            if (featureIsEnabled(FEATURE_FREQ_SENSOR)) {
+                if (!rpmDataAvailable) {  // We want DSHOT telemetry RPM data (if available) to have precedence
+                    rpm = (int)getFreqSensorRPM(i) * 100 * 2 / motorConfig()->motorPoleCount;
+                    rpmDataAvailable = true;
+                }
             }
 #endif
 

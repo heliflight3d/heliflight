@@ -102,6 +102,7 @@ typedef enum {
     OWNER_PULLDOWN,
     OWNER_DSHOT_BITBANG,
     OWNER_SWD,
+    OWNER_FREQ,
     OWNER_TOTAL_COUNT
 } resourceOwner_e;
 
