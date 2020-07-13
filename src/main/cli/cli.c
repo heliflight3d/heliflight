@@ -3106,175 +3106,182 @@ enum {
 
 static void printEscInfo(const char *cmdName, const uint8_t *escInfoBuffer, uint8_t bytesRead)
 {
-    bool escInfoReceived = false;
-    if (bytesRead > ESC_INFO_VERSION_POSITION) {
-        uint8_t escInfoVersion;
-        uint8_t frameLength;
-        if (escInfoBuffer[ESC_INFO_VERSION_POSITION] == 254) {
-            escInfoVersion = ESC_INFO_BLHELI32;
-            frameLength = ESC_INFO_BLHELI32_EXPECTED_FRAME_SIZE;
-        } else if (escInfoBuffer[ESC_INFO_VERSION_POSITION] == 255) {
-            escInfoVersion = ESC_INFO_KISS_V2;
-            frameLength = ESC_INFO_KISS_V2_EXPECTED_FRAME_SIZE;
-        } else {
-            escInfoVersion = ESC_INFO_KISS_V1;
-            frameLength = ESC_INFO_KISS_V1_EXPECTED_FRAME_SIZE;
-        }
+    if ( escSensorConfig()->escSensorProtocol == ESC_SENSOR_PROTOCOL_HOBBYWINGV4 ) {
+        cliPrintLine("HobbyWing V4 ESC Protocol -- ESC info not supported.");
+    } else {
+        // KISS ESC PROTOCOL
+        bool escInfoReceived = false;
+        if (bytesRead > ESC_INFO_VERSION_POSITION) {
+            uint8_t escInfoVersion;
+            uint8_t frameLength;
+            if (escInfoBuffer[ESC_INFO_VERSION_POSITION] == 254) {
+                escInfoVersion = ESC_INFO_BLHELI32;
+                frameLength = ESC_INFO_BLHELI32_EXPECTED_FRAME_SIZE;
+            } else if (escInfoBuffer[ESC_INFO_VERSION_POSITION] == 255) {
+                escInfoVersion = ESC_INFO_KISS_V2;
+                frameLength = ESC_INFO_KISS_V2_EXPECTED_FRAME_SIZE;
+            } else {
+                escInfoVersion = ESC_INFO_KISS_V1;
+                frameLength = ESC_INFO_KISS_V1_EXPECTED_FRAME_SIZE;
+            }
 
-        if (bytesRead == frameLength) {
-            escInfoReceived = true;
+            if (bytesRead == frameLength) {
+                escInfoReceived = true;
 
-            if (calculateCrc8(escInfoBuffer, frameLength - 1) == escInfoBuffer[frameLength - 1]) {
-                uint8_t firmwareVersion = 0;
-                uint8_t firmwareSubVersion = 0;
-                uint8_t escType = 0;
-                switch (escInfoVersion) {
-                case ESC_INFO_KISS_V1:
-                    firmwareVersion = escInfoBuffer[12];
-                    firmwareSubVersion = (escInfoBuffer[13] & 0x1f) + 97;
-                    escType = (escInfoBuffer[13] & 0xe0) >> 5;
-
-                    break;
-                case ESC_INFO_KISS_V2:
-                    firmwareVersion = escInfoBuffer[13];
-                    firmwareSubVersion = escInfoBuffer[14];
-                    escType = escInfoBuffer[15];
-
-                    break;
-                case ESC_INFO_BLHELI32:
-                    firmwareVersion = escInfoBuffer[13];
-                    firmwareSubVersion = escInfoBuffer[14];
-                    escType = escInfoBuffer[15];
-
-                    break;
-                }
-
-                cliPrint("ESC Type: ");
-                switch (escInfoVersion) {
-                case ESC_INFO_KISS_V1:
-                case ESC_INFO_KISS_V2:
-                    switch (escType) {
-                    case 1:
-                        cliPrintLine("KISS8A");
+                if (calculateCrc8(escInfoBuffer, frameLength - 1) == escInfoBuffer[frameLength - 1]) {
+                    uint8_t firmwareVersion = 0;
+                    uint8_t firmwareSubVersion = 0;
+                    uint8_t escType = 0;
+                    switch (escInfoVersion) {
+                    case ESC_INFO_KISS_V1:
+                        firmwareVersion = escInfoBuffer[12];
+                        firmwareSubVersion = (escInfoBuffer[13] & 0x1f) + 97;
+                        escType = (escInfoBuffer[13] & 0xe0) >> 5;
 
                         break;
-                    case 2:
-                        cliPrintLine("KISS16A");
+                    case ESC_INFO_KISS_V2:
+                        firmwareVersion = escInfoBuffer[13];
+                        firmwareSubVersion = escInfoBuffer[14];
+                        escType = escInfoBuffer[15];
 
                         break;
-                    case 3:
-                        cliPrintLine("KISS24A");
-
-                        break;
-                    case 5:
-                        cliPrintLine("KISS Ultralite");
-
-                        break;
-                    default:
-                        cliPrintLine("unknown");
+                    case ESC_INFO_BLHELI32:
+                        firmwareVersion = escInfoBuffer[13];
+                        firmwareSubVersion = escInfoBuffer[14];
+                        escType = escInfoBuffer[15];
 
                         break;
                     }
 
-                    break;
-                case ESC_INFO_BLHELI32:
-                    {
-                        char *escType = (char *)(escInfoBuffer + 31);
-                        escType[32] = 0;
-                        cliPrintLine(escType);
-                    }
-
-                    break;
-                }
-
-                cliPrint("MCU Serial No: 0x");
-                for (int i = 0; i < 12; i++) {
-                    if (i && (i % 3 == 0)) {
-                        cliPrint("-");
-                    }
-                    cliPrintf("%02x", escInfoBuffer[i]);
-                }
-                cliPrintLinefeed();
-
-                switch (escInfoVersion) {
-                case ESC_INFO_KISS_V1:
-                case ESC_INFO_KISS_V2:
-                    cliPrintLinef("Firmware Version: %d.%02d%c", firmwareVersion / 100, firmwareVersion % 100, (char)firmwareSubVersion);
-
-                    break;
-                case ESC_INFO_BLHELI32:
-                    cliPrintLinef("Firmware Version: %d.%02d%", firmwareVersion, firmwareSubVersion);
-
-                    break;
-                }
-                if (escInfoVersion == ESC_INFO_KISS_V2 || escInfoVersion == ESC_INFO_BLHELI32) {
-                    cliPrintLinef("Rotation Direction: %s", escInfoBuffer[16] ? "reversed" : "normal");
-                    cliPrintLinef("3D: %s", escInfoBuffer[17] ? "on" : "off");
-                    if (escInfoVersion == ESC_INFO_BLHELI32) {
-                        uint8_t setting = escInfoBuffer[18];
-                        cliPrint("Low voltage Limit: ");
-                        switch (setting) {
-                        case 0:
-                            cliPrintLine("off");
+                    cliPrint("ESC Type: ");
+                    switch (escInfoVersion) {
+                    case ESC_INFO_KISS_V1:
+                    case ESC_INFO_KISS_V2:
+                        switch (escType) {
+                        case 1:
+                            cliPrintLine("KISS8A");
 
                             break;
-                        case 255:
-                            cliPrintLine("unsupported");
+                        case 2:
+                            cliPrintLine("KISS16A");
+
+                            break;
+                        case 3:
+                            cliPrintLine("KISS24A");
+
+                            break;
+                        case 5:
+                            cliPrintLine("KISS Ultralite");
 
                             break;
                         default:
-                            cliPrintLinef("%d.%01d", setting / 10, setting % 10);
+                            cliPrintLine("unknown");
 
                             break;
                         }
 
-                        setting = escInfoBuffer[19];
-                        cliPrint("Current Limit: ");
-                        switch (setting) {
-                        case 0:
-                            cliPrintLine("off");
-
-                            break;
-                        case 255:
-                            cliPrintLine("unsupported");
-
-                            break;
-                        default:
-                            cliPrintLinef("%d", setting);
-
-                            break;
+                        break;
+                    case ESC_INFO_BLHELI32:
+                        {
+                            char *escType = (char *)(escInfoBuffer + 31);
+                            escType[32] = 0;
+                            cliPrintLine(escType);
                         }
 
-                        for (int i = 0; i < 4; i++) {
-                            setting = escInfoBuffer[i + 20];
-                            cliPrintLinef("LED %d: %s", i, setting ? (setting == 255) ? "unsupported" : "on" : "off");
+                        break;
+                    }
+
+                    cliPrint("MCU Serial No: 0x");
+                    for (int i = 0; i < 12; i++) {
+                        if (i && (i % 3 == 0)) {
+                            cliPrint("-");
+                        }
+                        cliPrintf("%02x", escInfoBuffer[i]);
+                    }
+                    cliPrintLinefeed();
+
+                    switch (escInfoVersion) {
+                    case ESC_INFO_KISS_V1:
+                    case ESC_INFO_KISS_V2:
+                        cliPrintLinef("Firmware Version: %d.%02d%c", firmwareVersion / 100, firmwareVersion % 100, (char)firmwareSubVersion);
+
+                        break;
+                    case ESC_INFO_BLHELI32:
+                        cliPrintLinef("Firmware Version: %d.%02d%", firmwareVersion, firmwareSubVersion);
+
+                        break;
+                    }
+                    if (escInfoVersion == ESC_INFO_KISS_V2 || escInfoVersion == ESC_INFO_BLHELI32) {
+                        cliPrintLinef("Rotation Direction: %s", escInfoBuffer[16] ? "reversed" : "normal");
+                        cliPrintLinef("3D: %s", escInfoBuffer[17] ? "on" : "off");
+                        if (escInfoVersion == ESC_INFO_BLHELI32) {
+                            uint8_t setting = escInfoBuffer[18];
+                            cliPrint("Low voltage Limit: ");
+                            switch (setting) {
+                            case 0:
+                                cliPrintLine("off");
+
+                                break;
+                            case 255:
+                                cliPrintLine("unsupported");
+
+                                break;
+                            default:
+                                cliPrintLinef("%d.%01d", setting / 10, setting % 10);
+
+                                break;
+                            }
+
+                            setting = escInfoBuffer[19];
+                            cliPrint("Current Limit: ");
+                            switch (setting) {
+                            case 0:
+                                cliPrintLine("off");
+
+                                break;
+                            case 255:
+                                cliPrintLine("unsupported");
+
+                                break;
+                            default:
+                                cliPrintLinef("%d", setting);
+
+                                break;
+                            }
+
+                            for (int i = 0; i < 4; i++) {
+                                setting = escInfoBuffer[i + 20];
+                                cliPrintLinef("LED %d: %s", i, setting ? (setting == 255) ? "unsupported" : "on" : "off");
+                            }
                         }
                     }
+                } else {
+                    cliPrintErrorLinef(cmdName, "CHECKSUM ERROR.");
                 }
             } else {
-                cliPrintErrorLinef(cmdName, "CHECKSUM ERROR.");
+                cliPrintErrorLinef(cmdName, "FRAME LENGTH ERROR.");
             }
         }
-    }
 
-    if (!escInfoReceived) {
-        cliPrintLine("No Info.");
+        if (!escInfoReceived) {
+            cliPrintLine("No Info.");
+        }
     }
 }
 
 static void executeEscInfoCommand(const char *cmdName, uint8_t escIndex)
 {
-    cliPrintLinef("Info for ESC %d:", escIndex);
-
-    uint8_t escInfoBuffer[ESC_INFO_BLHELI32_EXPECTED_FRAME_SIZE];
-
-    startEscDataRead(escInfoBuffer, ESC_INFO_BLHELI32_EXPECTED_FRAME_SIZE);
-
-    dshotCommandWrite(escIndex, getMotorCount(), DSHOT_CMD_ESC_INFO, DSHOT_CMD_TYPE_BLOCKING);
-
-    delay(10);
-
-    printEscInfo(cmdName, escInfoBuffer, getNumberEscBytesRead());
+    if ( escSensorConfig()->escSensorProtocol == ESC_SENSOR_PROTOCOL_HOBBYWINGV4 ) {
+        cliPrintLine("HobbyWing V4 ESC Protocol -- ESC info not supported.");
+    } else {
+        // KISS ESC PROTOCOL
+        uint8_t escInfoBuffer[ESC_INFO_BLHELI32_EXPECTED_FRAME_SIZE];
+        cliPrintLinef("Info for ESC %d:", escIndex);
+        startEscDataRead(escInfoBuffer, ESC_INFO_BLHELI32_EXPECTED_FRAME_SIZE);
+        dshotCommandWrite(escIndex, getMotorCount(), DSHOT_CMD_ESC_INFO, true);
+        delay(10);
+        printEscInfo(cmdName, escInfoBuffer, getNumberEscBytesRead());
+    }
 }
 #endif // USE_ESC_SENSOR && USE_ESC_SENSOR_INFO
 

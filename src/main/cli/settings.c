@@ -441,6 +441,12 @@ static const char * const lookupTableOsdLogoOnArming[] = {
 };
 #endif
 
+#ifdef USE_ESC_SENSOR
+static const char * const lookupTableEscSensorProtocol[] = {
+    "KISS", "HOBBYWINGV4"
+};
+#endif
+
 #define LOOKUP_TABLE_ENTRY(name) { name, ARRAYLEN(name) }
 
 const lookupTableEntry_t lookupTables[] = {
@@ -543,6 +549,9 @@ const lookupTableEntry_t lookupTables[] = {
 
 #ifdef USE_OSD
     LOOKUP_TABLE_ENTRY(lookupTableOsdLogoOnArming),
+#endif
+#ifdef USE_ESC_SENSOR
+    LOOKUP_TABLE_ENTRY(lookupTableEscSensorProtocol),
 #endif
 };
 
@@ -1279,6 +1288,10 @@ const clivalue_t valueTable[] = {
 #ifdef USE_ESC_SENSOR
     { "esc_sensor_halfduplex",          VAR_UINT8   | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_ESC_SENSOR_CONFIG, offsetof(escSensorConfig_t, halfDuplex) },
     { "esc_sensor_current_offset",      VAR_UINT16  | MASTER_VALUE, .config.minmaxUnsigned = { 0, 16000 }, PG_ESC_SENSOR_CONFIG, offsetof(escSensorConfig_t, offset) },
+    { "esc_sensor_protocol",            VAR_UINT8   | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_ESC_SENSOR_PROTOCOL }, PG_ESC_SENSOR_CONFIG, offsetof(escSensorConfig_t, escSensorProtocol) },
+    { "esc_sensor_hobbywing_curroffset",    VAR_UINT16  | MASTER_VALUE, .config.minmaxUnsigned = { 0, 1000 }, PG_ESC_SENSOR_CONFIG, offsetof(escSensorConfig_t, esc_sensor_hobbywing_curroffset) },
+    { "esc_sensor_hobbywing_voltagedivisor", VAR_UINT8  | MASTER_VALUE, .config.minmaxUnsigned = { 0, 254 }, PG_ESC_SENSOR_CONFIG, offsetof(escSensorConfig_t, esc_sensor_hobbywing_voltagedivisor) },
+    { "esc_sensor_hobbywing_currscale", VAR_UINT8  | MASTER_VALUE, .config.minmaxUnsigned = { 0, 254 }, PG_ESC_SENSOR_CONFIG, offsetof(escSensorConfig_t, esc_sensor_hobbywing_currscale) },
 #endif
 
 #ifdef USE_RX_FRSKY_SPI

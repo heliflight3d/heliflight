@@ -123,6 +123,9 @@ typedef enum {
 #ifdef USE_OSD
     TABLE_OSD_LOGO_ON_ARMING,
 #endif
+#ifdef USE_ESC_SENSOR
+    TABLE_ESC_SENSOR_PROTOCOL,
+#endif
 
     LOOKUP_TABLE_COUNT
 } lookupTableIndex_e;

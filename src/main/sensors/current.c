@@ -222,13 +222,10 @@ void currentMeterESCRefresh(int32_t lastUpdateAt)
     UNUSED(lastUpdateAt);
 
     escSensorData_t *escData = getEscSensorData(ESC_SENSOR_COMBINED);
-    if (escData && escData->dataAge <= ESC_BATTERY_AGE_MAX) {
-        currentMeterESCState.amperage = escData->current + escSensorConfig()->offset / 10;
-        currentMeterESCState.mAhDrawn = escData->consumption + escSensorConfig()->offset * millis() / (1000.0f * 3600);
-    } else {
-        currentMeterESCState.amperage = 0;
-        currentMeterESCState.mAhDrawn = 0;
-    }
+
+    // HF3D:  Data validity is now checked in esc_sensor.c
+    currentMeterESCState.amperage = escData->current + escSensorConfig()->offset / 10;
+    currentMeterESCState.mAhDrawn = escData->consumption + escSensorConfig()->offset * millis() / (1000.0f * 3600);
 }
 
 void currentMeterESCReadCombined(currentMeter_t *meter)
@@ -241,13 +238,11 @@ void currentMeterESCReadCombined(currentMeter_t *meter)
 void currentMeterESCReadMotor(uint8_t motorNumber, currentMeter_t *meter)
 {
     escSensorData_t *escData = getEscSensorData(motorNumber);
-    if (escData && escData->dataAge <= ESC_BATTERY_AGE_MAX) {
-        meter->amperage = escData->current;
-        meter->amperageLatest = escData->current;
-        meter->mAhDrawn = escData->consumption;
-    } else {
-        currentMeterReset(meter);
-    }
+
+    // HF3D:  Data validity is now checked in esc_sensor.c
+    meter->amperage = escData->current;
+    meter->amperageLatest = escData->current;
+    meter->mAhDrawn = escData->consumption;
 }
 #endif
 
