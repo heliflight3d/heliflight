@@ -203,7 +203,6 @@ static bool accNeedsCalibration(void)
         if (isModeActivationConditionPresent(BOXANGLE) ||
             isModeActivationConditionPresent(BOXHORIZON) ||
             isModeActivationConditionPresent(BOXGPSRESCUE) ||
-            isModeActivationConditionPresent(BOXCAMSTAB) ||
             isModeActivationConditionPresent(BOXCALIB) ||
             isModeActivationConditionPresent(BOXACROTRAINER)) {
 

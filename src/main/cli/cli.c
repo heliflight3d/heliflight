@@ -108,7 +108,6 @@ bool cliMode = false;
 #include "io/asyncfatfs/asyncfatfs.h"
 #include "io/beeper.h"
 #include "io/flashfs.h"
-#include "io/gimbal.h"
 #include "io/gps.h"
 #include "io/ledstrip.h"
 #include "io/serial.h"
@@ -251,7 +250,7 @@ static const char * const mixerNames[] = {
 // sync this with features_e
 static const char * const featureNames[] = {
     "RX_PPM", "", "INFLIGHT_ACC_CAL", "RX_SERIAL", "MOTOR_STOP",
-    "SERVO_TILT", "SOFTSERIAL", "GPS", "",
+    "", "SOFTSERIAL", "GPS", "",
     "RANGEFINDER", "TELEMETRY", "", "3D", "RX_PARALLEL_PWM",
     "RX_MSP", "RSSI_ADC", "LED_STRIP", "DISPLAY", "OSD",
     "", "CHANNEL_FORWARDING", "", "AIRMODE",

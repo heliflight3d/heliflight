@@ -43,7 +43,6 @@ typedef enum {
 
     // RCMODE flags
     BOXHEADADJ,
-    BOXCAMSTAB,
     BOXBEEPERON,
     BOXLEDLOW,
     BOXCALIB,
