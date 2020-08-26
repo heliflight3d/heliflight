@@ -565,7 +565,7 @@ void init(void)
     serialInit(featureIsEnabled(FEATURE_SOFTSERIAL), SERIAL_PORT_NONE);
 #endif
 
-    mixerInit(mixerConfig()->mixerMode);
+    mixerInit();
     mixerConfigureOutput();
 
     uint16_t idlePulse = motorConfig()->mincommand;
@@ -832,11 +832,6 @@ void init(void)
     blackboxInit();
 #endif
 
-#ifdef USE_ACC
-    if (mixerConfig()->mixerMode == MIXER_GIMBAL) {
-        accStartCalibration();
-    }
-#endif
     gyroStartCalibration(false);
 #ifdef USE_BARO
     baroStartCalibration();
