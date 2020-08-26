@@ -52,7 +52,6 @@ typedef enum {
     BOXSERVO2,
     BOXSERVO3,
     BOXBLACKBOX,
-    BOXAIRMODE,
     BOXBLACKBOXERASE,
     BOXCAMERA1,
     BOXCAMERA2,
@@ -129,8 +128,6 @@ typedef struct modeActivationProfile_s {
 
 bool IS_RC_MODE_ACTIVE(boxId_e boxId);
 void rcModeUpdate(boxBitmask_t *newState);
-
-bool airmodeIsEnabled(void);
 
 bool isRangeActive(uint8_t auxChannelIndex, const channelRange_t *range);
 void updateActivatedModes(void);
