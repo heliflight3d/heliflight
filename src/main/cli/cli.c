@@ -5472,8 +5472,8 @@ static void cliDshotTelemetryInfo(const char *cmdName, char *cmdline)
         for (uint8_t i = 0; i < getMotorCount(); i++) {
             cliPrintf("%5d   %7d   %6d   %5d   ", i,
                       (int)getDshotTelemetry(i) * 100,
-                      (int)getDshotTelemetry(i) * 100 * 2 / motorConfig()->motorPoleCount,
-                      (int)getDshotTelemetry(i) * 100 * 2 / motorConfig()->motorPoleCount / 60);
+                      (int)calcMotorRpm(i,getDshotTelemetry(i)),
+                      (int)calcMotorRpm(i,getDshotTelemetry(i)) / 60);
 #ifdef USE_DSHOT_TELEMETRY_STATS
             if (isDshotMotorTelemetryActive(i)) {
                 const int calcPercent = getDshotTelemetryMotorInvalidPercent(i);

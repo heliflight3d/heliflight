@@ -370,7 +370,7 @@ static uint8_t decodeEscFrame(void)
         frameStatus = ESC_SENSOR_FRAME_COMPLETE;
 
         if (escSensorMotor < 4) {
-            DEBUG_SET(DEBUG_ESC_SENSOR_RPM, escSensorMotor, calcEscRpm(escSensorData[escSensorMotor].rpm) / 10); // output actual rpm/10 to fit in 16bit signed.
+            DEBUG_SET(DEBUG_ESC_SENSOR_RPM, escSensorMotor, calcMotorRpm(escSensorMotor, escSensorData[escSensorMotor].rpm) / 10); // output actual rpm/10 to fit in 16bit signed.
             DEBUG_SET(DEBUG_ESC_SENSOR_TMP, escSensorMotor, escSensorData[escSensorMotor].temperature);
         }
     } else {
@@ -581,7 +581,7 @@ void escSensorProcess(timeUs_t currentTimeUs)
                 // HF3D TODO:  Add a debug_ESC parameter for Hobbywing (Packet #, RPM, FET Temp, BEC Temp)
                 // HF3D TODO:  Hopefully we're bringing ESC Voltage and Current into the logs permanently anyway.... and probably should bring ESC Temp in permanently too.
                 if (escSensorMotor < 4) {
-                    DEBUG_SET(DEBUG_ESC_SENSOR_RPM, escSensorMotor, calcEscRpm(escSensorData[escSensorMotor].rpm) / 10); // output actual rpm/10 to fit in 16bit signed.
+                    DEBUG_SET(DEBUG_ESC_SENSOR_RPM, escSensorMotor, calcMotorRpm(escSensorMotor, escSensorData[escSensorMotor].rpm) / 10); // output actual rpm/10 to fit in 16bit signed.
                     DEBUG_SET(DEBUG_ESC_SENSOR_TMP, escSensorMotor, escSensorData[escSensorMotor].temperature);
                 }
 
@@ -628,8 +628,4 @@ void escSensorProcess(timeUs_t currentTimeUs)
     }
 }
 
-int calcEscRpm(int erpm)
-{
-    return (erpm * 100) / (motorConfig()->motorPoleCount / 2);
-}
 #endif

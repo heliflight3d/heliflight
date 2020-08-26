@@ -835,6 +835,8 @@ static FAST_CODE void subTaskMotorUpdate(timeUs_t currentTimeUs)
 
     writeMotors();
 
+    rpmSourceUpdate();
+
 #ifdef USE_DSHOT_TELEMETRY_STATS
     if (debugMode == DEBUG_DSHOT_RPM_ERRORS && useDshotTelemetry) {
         const uint8_t motorCount = MIN(getMotorCount(), 4);

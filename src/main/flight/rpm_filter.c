@@ -63,7 +63,6 @@ typedef struct rpmNotchFilter_s
     biquadFilter_t notch[XYZ_AXIS_COUNT][MAX_SUPPORTED_MOTORS][RPM_FILTER_MAXHARMONICS];
 } rpmNotchFilter_t;
 
-FAST_RAM_ZERO_INIT static float   erpmToHz;
 FAST_RAM_ZERO_INIT static float   filteredMotorErpm[MAX_SUPPORTED_MOTORS];
 FAST_RAM_ZERO_INIT static float   minMotorFrequency;
 FAST_RAM_ZERO_INIT static uint8_t numberFilters;
@@ -148,8 +147,6 @@ void rpmFilterInit(const rpmFilterConfig_t *config)
         pt1FilterInit(&rpmFilters[i], pt1FilterGain(config->rpm_lpf, pidLooptime * 1e-6f));
     }
 
-    erpmToHz = ERPM_PER_LSB / SECONDS_PER_MINUTE  / (motorConfig()->motorPoleCount / 2.0f);
-
     const float loopIterationsPerUpdate = MIN_UPDATE_T / (pidLooptime * 1e-6f);
     numberFilters = getMotorCount() * (filters[0].harmonics + filters[1].harmonics);
     const float filtersPerLoopIteration = numberFilters / loopIterationsPerUpdate;
@@ -221,7 +218,7 @@ FAST_CODE_NOINLINE void rpmFilterUpdate()
                 if (++currentMotor == getMotorCount()) {
                     currentMotor = 0;
                 }
-                motorFrequency[currentMotor] = erpmToHz * filteredMotorErpm[currentMotor];
+                motorFrequency[currentMotor] = filteredMotorErpm[currentMotor] * ERPM_PER_LSB / SECONDS_PER_MINUTE / (motorConfig()->motorPoleCount[currentMotor] / 2);
                 minMotorFrequency = 0.0f;
             }
             currentFilter = &filters[currentFilterNumber];
