@@ -808,8 +808,10 @@ void subTaskTelemetryPollSensors(timeUs_t currentTimeUs)
 }
 #endif
 
-static FAST_CODE void subTaskMotorUpdate(timeUs_t currentTimeUs)
+static FAST_CODE void subTaskMixerUpdate(timeUs_t currentTimeUs)
 {
+    UNUSED(currentTimeUs);
+
     uint32_t startTime = 0;
     if (debugMode == DEBUG_CYCLETIME) {
         startTime = micros();
@@ -822,18 +824,14 @@ static FAST_CODE void subTaskMotorUpdate(timeUs_t currentTimeUs)
         startTime = micros();
     }
 
-    mixTable(currentTimeUs);
+    mixerUpdate();
 
 #ifdef USE_SERVOS
-    // motor outputs are used as sources for servo mixing, so motors must be calculated using mixTable() before servos.
-    if (isMixerUsingServos()) {
-        writeServos();
-    }
+    servoUpdate();
 #endif
-
-    writeMotors();
-
-    rpmSourceUpdate();
+#ifdef USE_MOTOR
+    motorUpdate();
+#endif
 
 #ifdef USE_DSHOT_TELEMETRY_STATS
     if (debugMode == DEBUG_DSHOT_RPM_ERRORS && useDshotTelemetry) {
@@ -905,13 +903,13 @@ FAST_CODE void taskMainPidLoop(timeUs_t currentTimeUs)
     // DEBUG_PIDLOOP, timings for:
     // 0 - gyroUpdate()
     // 1 - subTaskPidController()
-    // 2 - subTaskMotorUpdate()
+    // 2 - subTaskMixerUpdate()
     // 3 - subTaskPidSubprocesses()
     DEBUG_SET(DEBUG_PIDLOOP, 0, micros() - currentTimeUs);
 
     subTaskRcCommand(currentTimeUs);
     subTaskPidController(currentTimeUs);
-    subTaskMotorUpdate(currentTimeUs);
+    subTaskMixerUpdate(currentTimeUs);
     subTaskPidSubprocesses(currentTimeUs);
 
     if (debugMode == DEBUG_CYCLETIME) {

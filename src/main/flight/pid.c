@@ -32,6 +32,8 @@
 #include "common/filter.h"
 #include "common/maths.h"
 
+#include "config/feature.h"
+#include "config/config.h"
 #include "config/config_reset.h"
 
 #include "drivers/dshot_command.h"
@@ -1085,6 +1087,10 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
 
         // calculating the PID sum
         pidData[axis].Sum = pidData[axis].P + pidData[axis].I + pidData[axis].D + pidData[axis].F;
+
+        // Limited PID sum
+        const float pidLimit = (axis == FD_YAW) ? currentPidProfile->pidSumLimitYaw : currentPidProfile->pidSumLimit;
+        pidData[axis].SumLim = constrainf(pidData[axis].Sum, -pidLimit, pidLimit);
     }
 
     // Disable PID control if gyro overflow detected
@@ -1096,6 +1102,7 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
             pidData[axis].D = 0;
             pidData[axis].F = 0;
             pidData[axis].Sum = 0;
+            pidData[axis].SumLim = 0;
         }
     }
 }

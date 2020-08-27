@@ -476,8 +476,9 @@ static bool bbUpdateStart(void)
             if (value != BB_INVALID) {
                 dshotTelemetryState.motorState[motorIndex].telemetryValue = value;
                 dshotTelemetryState.motorState[motorIndex].telemetryActive = true;
-                if (motorIndex < 4) {
+                if (motorIndex < 2) {
                     DEBUG_SET(DEBUG_DSHOT_RPM_TELEMETRY, motorIndex, value);
+                    DEBUG_SET(DEBUG_DSHOT_RPM_TELEMETRY, motorIndex+2, dshotTelemetryState.invalidPacketCount);
                 }
             } else {
                 dshotTelemetryState.invalidPacketCount++;

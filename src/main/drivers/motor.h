@@ -84,6 +84,7 @@ uint16_t motorConvertToExternal(float motorValue);
 struct motorDevConfig_s; // XXX Shouldn't be needed once pwm_output* is really cleaned up.
 void motorDevInit(const struct motorDevConfig_s *motorConfig, uint16_t idlePulse, uint8_t motorCount);
 int motorDeviceCount(void);
+void checkMotorProtocol(const motorDevConfig_t *motorDevConfig);
 bool checkMotorProtocolEnabled(const motorDevConfig_t *motorConfig, bool *protocolIsDshot);
 bool isMotorProtocolDshot(void);
 bool isMotorProtocolEnabled(void);

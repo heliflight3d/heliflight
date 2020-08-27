@@ -50,12 +50,10 @@
 
 #include "flight/failsafe.h"
 #include "flight/gps_rescue.h"
-#include "flight/imu.h"
-#include "flight/mixer.h"
-#include "flight/pid.h"
 #include "flight/position.h"
-#include "flight/rpm_filter.h"
-#include "flight/servos.h"
+#include "flight/imu.h"
+#include "flight/pid.h"
+#include "flight/mixer.h"
 
 #include "io/beeper.h"
 #include "io/gps.h"
@@ -797,15 +795,10 @@ const clivalue_t valueTable[] = {
 #endif
 #endif // USE_BEEPER
 
-// PG_MIXER_CONFIG
-    { "yaw_motors_reversed",        VAR_INT8   | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_MIXER_CONFIG, offsetof(mixerConfig_t, yaw_motors_reversed) },
-
 // PG_SERVO_CONFIG
 #ifdef USE_SERVOS
     { "servo_center_pulse",         VAR_UINT16 | MASTER_VALUE, .config.minmaxUnsigned = { PWM_PULSE_MIN, PWM_PULSE_MAX }, PG_SERVO_CONFIG, offsetof(servoConfig_t, dev.servoCenterPulse) },
     { "servo_pwm_rate",             VAR_UINT16 | MASTER_VALUE, .config.minmaxUnsigned = { 50, 498 }, PG_SERVO_CONFIG, offsetof(servoConfig_t, dev.servoPwmRate) },
-    { "servo_lowpass_hz",           VAR_UINT16 | MASTER_VALUE, .config.minmaxUnsigned = { 0, 400}, PG_SERVO_CONFIG, offsetof(servoConfig_t, servo_lowpass_freq) },
-    { "channel_forwarding_start",   VAR_UINT8  | MASTER_VALUE, .config.minmaxUnsigned = { AUX1, MAX_SUPPORTED_RC_CHANNEL_COUNT }, PG_SERVO_CONFIG, offsetof(servoConfig_t, channelForwardingStartChannel) },
 #endif
 
 // PG_CONTROLRATE_PROFILES

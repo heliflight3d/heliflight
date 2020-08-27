@@ -28,12 +28,38 @@ typedef enum {
 } rpmSource_e;
 
 
+extern uint8_t motorCount;
+
+extern float motor[];
+
+extern float motorOutputLow;
+extern float motorOutputHigh;
+extern float motorOutputStop;
+extern float motorOutputRange;
+
+
 bool isRpmSourceActive(void);
+bool areMotorsRunning(void);
 
 int getMotorRPM(uint8_t motor);
 int calcMotorRpm(uint8_t motor, int erpm);
 
 void rpmSourceInit(void);
-void rpmSourceUpdate(void);
+
+void initEscEndpoints(void);
+
+void motorInit(void);
+void motorStop(void);
+void motorUpdate(void);
+
+void motorResetDisarmed(void);
+void motorSetDisarmed(uint8_t motor, uint32_t value);
 
 float getHeadSpeed(void);
+
+
+// HF3D compat:
+#define stopMotors()      motorStop()
+#define getMotorCount()   motorCount
+
+#define getMotorMixRange() 1.0f
