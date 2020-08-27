@@ -187,11 +187,12 @@ static const blackboxDeltaFieldDefinition_t blackboxMainFields[] = {
     {"axisF",       0, SIGNED,   .Ipredict = PREDICT(0),       .Iencode = ENCODING(SIGNED_VB),   .Ppredict = PREDICT(PREVIOUS),      .Pencode = ENCODING(SIGNED_VB), CONDITION(ALWAYS)},
     {"axisF",       1, SIGNED,   .Ipredict = PREDICT(0),       .Iencode = ENCODING(SIGNED_VB),   .Ppredict = PREDICT(PREVIOUS),      .Pencode = ENCODING(SIGNED_VB), CONDITION(ALWAYS)},
     {"axisF",       2, SIGNED,   .Ipredict = PREDICT(0),       .Iencode = ENCODING(SIGNED_VB),   .Ppredict = PREDICT(PREVIOUS),      .Pencode = ENCODING(SIGNED_VB), CONDITION(ALWAYS)},
-    /* rcCommands are encoded together as a group in P-frames: */
+    /* rcCommands are encoded together as a group in P-frames, except rcCommand[COLLECTIVE]: */
     {"rcCommand",   0, SIGNED,   .Ipredict = PREDICT(0),       .Iencode = ENCODING(SIGNED_VB),   .Ppredict = PREDICT(PREVIOUS),      .Pencode = ENCODING(TAG8_4S16), CONDITION(ALWAYS)},
     {"rcCommand",   1, SIGNED,   .Ipredict = PREDICT(0),       .Iencode = ENCODING(SIGNED_VB),   .Ppredict = PREDICT(PREVIOUS),      .Pencode = ENCODING(TAG8_4S16), CONDITION(ALWAYS)},
     {"rcCommand",   2, SIGNED,   .Ipredict = PREDICT(0),       .Iencode = ENCODING(SIGNED_VB),   .Ppredict = PREDICT(PREVIOUS),      .Pencode = ENCODING(TAG8_4S16), CONDITION(ALWAYS)},
     {"rcCommand",   3, UNSIGNED, .Ipredict = PREDICT(0),       .Iencode = ENCODING(UNSIGNED_VB), .Ppredict = PREDICT(PREVIOUS),      .Pencode = ENCODING(TAG8_4S16), CONDITION(ALWAYS)},
+    {"rcCommand",   4, SIGNED,   .Ipredict = PREDICT(0),       .Iencode = ENCODING(SIGNED_VB),   .Ppredict = PREDICT(PREVIOUS),      .Pencode = ENCODING(SIGNED_VB), CONDITION(ALWAYS)},
 
     // setpoint - define 4 fields like rcCommand to use the same encoding. setpoint[4] contains the mixer throttle
     {"setpoint",    0, SIGNED,   .Ipredict = PREDICT(0),       .Iencode = ENCODING(SIGNED_VB),   .Ppredict = PREDICT(PREVIOUS),      .Pencode = ENCODING(TAG8_4S16), CONDITION(ALWAYS)},
@@ -237,8 +238,15 @@ static const blackboxDeltaFieldDefinition_t blackboxMainFields[] = {
     {"motor",       6, UNSIGNED, .Ipredict = PREDICT(MOTOR_0), .Iencode = ENCODING(SIGNED_VB),   .Ppredict = PREDICT(AVERAGE_2),     .Pencode = ENCODING(SIGNED_VB), CONDITION(AT_LEAST_MOTORS_7)},
     {"motor",       7, UNSIGNED, .Ipredict = PREDICT(MOTOR_0), .Iencode = ENCODING(SIGNED_VB),   .Ppredict = PREDICT(AVERAGE_2),     .Pencode = ENCODING(SIGNED_VB), CONDITION(AT_LEAST_MOTORS_8)},
 
-    /* Tricopter tail servo */
-    {"servo",       5, UNSIGNED, .Ipredict = PREDICT(1500),    .Iencode = ENCODING(SIGNED_VB),   .Ppredict = PREDICT(PREVIOUS),      .Pencode = ENCODING(SIGNED_VB), CONDITION(TRICOPTER)}
+    /* Helicopter servos */
+    // Ipredict set to Zero for now due to mix of 1500/760uS servos
+    {"servo",       0, UNSIGNED, .Ipredict = PREDICT(0),    .Iencode = ENCODING(UNSIGNED_VB),   .Ppredict = PREDICT(PREVIOUS),      .Pencode = ENCODING(TAG8_4S16), CONDITION(ALWAYS)},
+    {"servo",       1, UNSIGNED, .Ipredict = PREDICT(0),    .Iencode = ENCODING(UNSIGNED_VB),   .Ppredict = PREDICT(PREVIOUS),      .Pencode = ENCODING(TAG8_4S16), CONDITION(ALWAYS)},
+    {"servo",       2, UNSIGNED, .Ipredict = PREDICT(0),    .Iencode = ENCODING(UNSIGNED_VB),   .Ppredict = PREDICT(PREVIOUS),      .Pencode = ENCODING(TAG8_4S16), CONDITION(ALWAYS)},
+    {"servo",       3, UNSIGNED, .Ipredict = PREDICT(0),    .Iencode = ENCODING(UNSIGNED_VB),   .Ppredict = PREDICT(PREVIOUS),      .Pencode = ENCODING(TAG8_4S16), CONDITION(ALWAYS)},
+
+    /* Helicopter headspeed */
+    {"headspeed",  -1, UNSIGNED, .Ipredict = PREDICT(0),    .Iencode = ENCODING(UNSIGNED_VB),   .Ppredict = PREDICT(PREVIOUS),      .Pencode = ENCODING(SIGNED_VB), CONDITION(ALWAYS)},
 };
 
 #ifdef USE_GPS
@@ -298,7 +306,7 @@ typedef struct blackboxMainState_s {
     int32_t axisPID_D[XYZ_AXIS_COUNT];
     int32_t axisPID_F[XYZ_AXIS_COUNT];
 
-    int16_t rcCommand[4];
+    int16_t rcCommand[5];
     int16_t setpoint[4];
     int16_t gyroADC[XYZ_AXIS_COUNT];
     int16_t accADC[XYZ_AXIS_COUNT];
@@ -319,6 +327,7 @@ typedef struct blackboxMainState_s {
     int32_t surfaceRaw;
 #endif
     uint16_t rssi;
+    uint16_t headspeed;
 } blackboxMainState_t;
 
 typedef struct blackboxGpsState_s {
@@ -555,6 +564,9 @@ static void writeIntraframe(void)
      */
     blackboxWriteUnsignedVB(blackboxCurrent->rcCommand[THROTTLE]);
 
+    // Write rcCommand[COLLECTIVE]
+    blackboxWriteSignedVB(blackboxCurrent->rcCommand[COLLECTIVE]);
+
     // Write setpoint roll, pitch, yaw, and throttle
     blackboxWriteSigned16VBArray(blackboxCurrent->setpoint, 4);
 
@@ -613,10 +625,14 @@ static void writeIntraframe(void)
         blackboxWriteSignedVB(blackboxCurrent->motor[x] - blackboxCurrent->motor[0]);
     }
 
-    if (testBlackboxCondition(FLIGHT_LOG_FIELD_CONDITION_TRICOPTER)) {
-        //Assume the tail spends most of its time around the center
-        blackboxWriteSignedVB(blackboxCurrent->servo[5] - 1500);
-    }
+    // Write the servo I frames as unsigned since they will always be somewhere between 0 and 2020
+    blackboxWriteUnsignedVB(blackboxCurrent->servo[0]);
+    blackboxWriteUnsignedVB(blackboxCurrent->servo[1]);
+    blackboxWriteUnsignedVB(blackboxCurrent->servo[2]);
+    blackboxWriteUnsignedVB(blackboxCurrent->servo[3]);
+
+    // Write helicopter headspeed
+    blackboxWriteUnsignedVB(blackboxCurrent->headspeed);
 
     //Rotate our history buffers:
 
@@ -661,6 +677,7 @@ static void writeInterframe(void)
 
     int32_t deltas[8];
     int32_t setpointDeltas[4];
+    int32_t collectiveDelta;
 
     arraySubInt32(deltas, blackboxCurrent->axisPID_P, blackboxLast->axisPID_P, XYZ_AXIS_COUNT);
     blackboxWriteSignedVBArray(deltas, XYZ_AXIS_COUNT);
@@ -694,7 +711,11 @@ static void writeInterframe(void)
         setpointDeltas[x] = blackboxCurrent->setpoint[x] - blackboxLast->setpoint[x];
     }
 
+    // Calculate collective delta
+    collectiveDelta = blackboxCurrent->rcCommand[COLLECTIVE] - blackboxLast->rcCommand[COLLECTIVE];
+
     blackboxWriteTag8_4S16(deltas);
+    blackboxWriteSignedVB(collectiveDelta);
     blackboxWriteTag8_4S16(setpointDeltas);
 
     //Check for sensors that are updated periodically (so deltas are normally zero)
@@ -744,9 +765,14 @@ static void writeInterframe(void)
     }
     blackboxWriteMainStateArrayUsingAveragePredictor(offsetof(blackboxMainState_t, motor),     getMotorCount());
 
-    if (testBlackboxCondition(FLIGHT_LOG_FIELD_CONDITION_TRICOPTER)) {
-        blackboxWriteSignedVB(blackboxCurrent->servo[5] - blackboxLast->servo[5]);
+    // Calculate helicopter servo deltas from last BB frame and write as a group of 4 to this P interframe
+    for (int x = 0; x < 4; x++) {
+        deltas[x] = blackboxCurrent->servo[x] - blackboxLast->servo[x];
     }
+    blackboxWriteTag8_4S16(deltas);
+
+    // Write helicopter headspeed with delta from last frame
+    blackboxWriteSignedVB(blackboxCurrent->headspeed - blackboxLast->headspeed);
 
     //Rotate our history buffers
     blackboxHistory[2] = blackboxHistory[1];
@@ -1027,7 +1053,8 @@ static void loadMainState(timeUs_t currentTimeUs)
 #endif
     }
 
-    for (int i = 0; i < 4; i++) {
+    // ROLL/PITCH/YAW/COLLECTIVE
+    for (int i = 0; i < 5; i++) {
         blackboxCurrent->rcCommand[i] = lrintf(rcCommand[i]);
     }
 
@@ -1062,9 +1089,12 @@ static void loadMainState(timeUs_t currentTimeUs)
     blackboxCurrent->rssi = getRssi();
 
 #ifdef USE_SERVOS
-    //Tail servo for tricopters
-    blackboxCurrent->servo[5] = servo[5];
+    blackboxCurrent->servo[0] = servo[0];
+    blackboxCurrent->servo[1] = servo[1];
+    blackboxCurrent->servo[2] = servo[2];
+    blackboxCurrent->servo[3] = servo[3];
 #endif
+    blackboxCurrent->headspeed = getHeadSpeed();
 #else
     UNUSED(currentTimeUs);
 #endif // UNIT_TEST
