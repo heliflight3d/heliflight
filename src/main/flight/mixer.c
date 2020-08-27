@@ -38,6 +38,7 @@
 #include "flight/pid.h"
 #include "flight/imu.h"
 #include "flight/mixer.h"
+#include "flight/governor.h"
 
 #include "rx/rx.h"
 
@@ -133,8 +134,10 @@ void mixerUpdate(void)
     for (int i = 0; i < 16; i++)
         mixerInput[MIXER_IN_RCDATA_0 + i] = (rcData[i] - rxConfig()->midrc) * MIXER_RC_SCALING;
 
-    mixerInput[MIXER_IN_GOVERNOR_MAIN] = 0; // govOutput[0];
-    mixerInput[MIXER_IN_GOVERNOR_TAIL] = 0; // govOutput[1];
+    governorUpdate();
+
+    mixerInput[MIXER_IN_GOVERNOR_MAIN] = govOutput[0];
+    mixerInput[MIXER_IN_GOVERNOR_TAIL] = govOutput[1];
 
     // Current cyclic deflection
     cyclicTotal = sqrtf(mixerInput[MIXER_IN_STABILIZED_ROLL] * mixerInput[MIXER_IN_STABILIZED_ROLL] +
@@ -153,6 +156,7 @@ void mixerUpdate(void)
                 mixerInput[i] = mixerOverride[i] / 1000.0f;
         }
     }
+
 
     // Reset outputs
     for (int i = 0; i < MIXER_OUTPUT_COUNT; i++) {

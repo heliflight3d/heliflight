@@ -795,6 +795,16 @@ const clivalue_t valueTable[] = {
 #endif
 #endif // USE_BEEPER
 
+// PG_GOVERNOR_CONFIG
+    { "gov_max_headspeed",          VAR_UINT16 |  MASTER_VALUE,  .config.minmaxUnsigned = { 0, 10000 }, PG_GOVERNOR_CONFIG, offsetof(governorConfig_t, gov_max_headspeed) },
+    { "gov_gear_ratio",             VAR_UINT16 |  MASTER_VALUE,  .config.minmaxUnsigned = { 1000, 30000 }, PG_GOVERNOR_CONFIG, offsetof(governorConfig_t, gov_gear_ratio) },
+    { "gov_p_gain",                 VAR_UINT16 |  MASTER_VALUE,  .config.minmaxUnsigned = { 0, 500 }, PG_GOVERNOR_CONFIG, offsetof(governorConfig_t, gov_p_gain) },
+    { "gov_i_gain",                 VAR_UINT16 |  MASTER_VALUE,  .config.minmaxUnsigned = { 0, 500 }, PG_GOVERNOR_CONFIG, offsetof(governorConfig_t, gov_i_gain) },
+    { "gov_cyclic_ff_gain",         VAR_UINT16 |  MASTER_VALUE,  .config.minmaxUnsigned = { 0, 500 }, PG_GOVERNOR_CONFIG, offsetof(governorConfig_t, gov_cyclic_ff_gain) },
+    { "gov_collective_ff_gain",     VAR_UINT16 |  MASTER_VALUE,  .config.minmaxUnsigned = { 0, 500 }, PG_GOVERNOR_CONFIG, offsetof(governorConfig_t, gov_collective_ff_gain) },
+    { "gov_collective_ff_impulse_gain",  VAR_UINT16 |  MASTER_VALUE, .config.minmaxUnsigned = { 0, 500 }, PG_GOVERNOR_CONFIG, offsetof(governorConfig_t, gov_collective_ff_impulse_gain) },
+    { "gov_spoolup_time",           VAR_UINT8 |  MASTER_VALUE,  .config.minmaxUnsigned = { 0, 30 }, PG_GOVERNOR_CONFIG, offsetof(governorConfig_t, gov_spoolup_time) },
+
 // PG_SERVO_CONFIG
 #ifdef USE_SERVOS
     { "servo_center_pulse",         VAR_UINT16 | MASTER_VALUE, .config.minmaxUnsigned = { PWM_PULSE_MIN, PWM_PULSE_MAX }, PG_SERVO_CONFIG, offsetof(servoConfig_t, dev.servoCenterPulse) },
