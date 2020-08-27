@@ -59,5 +59,3 @@ void motorSetDisarmed(uint8_t motor, uint32_t value);
 // HF3D compat:
 #define stopMotors()      motorStop()
 #define getMotorCount()   motorCount
-
-#define getMotorMixRange() 1.0f

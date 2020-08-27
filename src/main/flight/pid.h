@@ -49,6 +49,7 @@
 
 #define ITERM_ACCELERATOR_GAIN_OFF 1000
 #define ITERM_ACCELERATOR_GAIN_MAX 30000
+
 typedef enum {
     PID_ROLL,
     PID_PITCH,
@@ -138,6 +139,14 @@ typedef struct pidProfile_s {
     uint8_t ff_smooth_factor;               // Amount of smoothing for interpolated FF steps
     uint8_t dyn_lpf_curve_expo;             // set the curve for dynamic dterm lowpass filter
     uint8_t vbat_sag_compensation;          // Reduce motor output by this percentage of the maximum compensation amount
+
+    // HF3D parameters
+    uint16_t yawColKf;                      // Feedforward for collective into Yaw
+    uint16_t yawColPulseKf;                 // Feedforward for collective impulse into Yaw
+    uint16_t yawCycKf;                      // Feedforward for cyclic into Yaw
+    uint16_t yawBaseThrust;                 // Base thrust for the tail
+    uint16_t collective_ff_impulse_freq;    // Collective input impulse high-pass filter cutoff frequency
+
 } pidProfile_t;
 
 PG_DECLARE_ARRAY(pidProfile_t, PID_PROFILE_COUNT, pidProfiles);
@@ -199,3 +208,5 @@ float pidGetFfBoostFactor();
 float pidGetFfSmoothFactor();
 float pidGetSpikeLimitInverse();
 float dynDtermLpfCutoffFreq(float throttle, uint16_t dynLpfMin, uint16_t dynLpfMax, uint8_t expo);
+float getCollectiveDeflectionAbs();
+float getCollectiveDeflectionAbsHPF();

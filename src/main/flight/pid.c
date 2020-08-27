@@ -47,16 +47,20 @@
 #include "fc/rc_controls.h"
 #include "fc/runtime_config.h"
 
-#include "flight/gps_rescue.h"
 #include "flight/imu.h"
 #include "flight/mixer.h"
-#include "flight/rpm_filter.h"
+#include "flight/servos.h"
+#include "flight/motors.h"
 #include "flight/setpoint.h"
+#include "flight/gps_rescue.h"
 
 #include "io/gps.h"
 
 #include "pg/pg.h"
 #include "pg/pg_ids.h"
+#include "pg/rx.h"
+
+#include "rx/rx.h"
 
 #include "sensors/acceleration.h"
 #include "sensors/battery.h"
@@ -161,6 +165,11 @@ void resetPidProfile(pidProfile_t *pidProfile)
         .ff_boost = 15,
         .dyn_lpf_curve_expo = 5,
         .vbat_sag_compensation = 0,
+        .yawColKf = 300,
+        .yawColPulseKf = 300,
+        .yawCycKf = 0,
+        .yawBaseThrust = 900,
+        .collective_ff_impulse_freq = 100,
     );
 }
 
@@ -189,6 +198,11 @@ typedef union dtermLowpass_u {
 } dtermLowpass_t;
 
 static FAST_RAM_ZERO_INIT float previousPidSetpoint[XYZ_AXIS_COUNT];
+
+static FAST_RAM_ZERO_INIT float collectiveDeflectionAbs;
+static FAST_RAM_ZERO_INIT float collectiveDeflectionAbsLPF;
+static FAST_RAM_ZERO_INIT float collectiveDeflectionAbsHPF;
+static FAST_RAM_ZERO_INIT float collectivePulseFilterGain;
 
 static FAST_RAM_ZERO_INIT filterApplyFnPtr dtermNotchApplyFn;
 static FAST_RAM_ZERO_INIT biquadFilter_t dtermNotch[XYZ_AXIS_COUNT];
@@ -232,7 +246,6 @@ float pidGetSpikeLimitInverse()
 {
     return ffSpikeLimitInverse;
 }
-
 
 float pidGetFfBoostFactor()
 {
@@ -361,6 +374,13 @@ void pidInitFilters(const pidProfile_t *pidProfile)
 #endif
     ffBoostFactor = (float)pidProfile->ff_boost / 10.0f;
     ffSpikeLimitInverse = pidProfile->ff_spike_limit ? 1.0f / ((float)pidProfile->ff_spike_limit / 10.0f) : 0.0f;
+
+    // HF3D: Collective input impulse high-pass filter.
+    // Setting is for cutoff frequency in Hz * 100.
+    // Calculate similar to pt1FilterGain with cutoff frequency of 0.05Hz (20s)
+    //   RC = 1 / ( 2 * M_PI_FLOAT * f_cut);  ==> RC = 3.183
+    //   k = dT / (RC + dT);                  ==>  k = 0.0000393 for 8kHz
+    collectivePulseFilterGain = dT / (dT + (1 / ( 2 * 3.14159f * (float)pidProfile->collective_ff_impulse_freq / 100.0f)));
 }
 
 #ifdef USE_RC_SMOOTHING_FILTER
@@ -408,7 +428,9 @@ typedef struct pidCoefficient_s {
 } pidCoefficient_t;
 
 static FAST_RAM_ZERO_INIT pidCoefficient_t pidCoefficient[XYZ_AXIS_COUNT];
+
 static FAST_RAM_ZERO_INIT float maxVelocity[XYZ_AXIS_COUNT];
+
 static FAST_RAM_ZERO_INIT float feedForwardTransition;
 static FAST_RAM_ZERO_INIT float levelGain, horizonGain, horizonTransition, horizonCutoffDegrees, horizonFactorRatio;
 static FAST_RAM_ZERO_INIT float itermWindupPointInv;
@@ -467,13 +489,16 @@ void pidInitConfig(const pidProfile_t *pidProfile)
     }
 
     levelGain = pidProfile->pid[PID_LEVEL].P / 10.0f;
+
     horizonGain = pidProfile->pid[PID_LEVEL].I / 10.0f;
     horizonTransition = (float)pidProfile->pid[PID_LEVEL].D;
     horizonTiltExpertMode = pidProfile->horizon_tilt_expert_mode;
     horizonCutoffDegrees = (175 - pidProfile->horizon_tilt_effect) * 1.8f;
     horizonFactorRatio = (100 - pidProfile->horizon_tilt_effect) * 0.01f;
+
     maxVelocity[FD_ROLL] = maxVelocity[FD_PITCH] = pidProfile->rateAccelLimit * 100 * dT;
     maxVelocity[FD_YAW] = pidProfile->yawRateAccelLimit * 100 * dT;
+
     itermWindupPointInv = 1.0f;
     if (pidProfile->itermWindupPointPercent < 100) {
         const float itermWindupPoint = pidProfile->itermWindupPointPercent / 100.0f;
@@ -534,6 +559,7 @@ void pidInitConfig(const pidProfile_t *pidProfile)
         thrustLinearizationB = (1.0f - thrustLinearization) / (2.0f * thrustLinearization);
     }
 #endif
+
 #ifdef USE_INTERPOLATED_SP
     ffFromInterpolatedSetpoint = pidProfile->ff_interpolate_sp;
     ffSmoothFactor = 1.0f - ((float)pidProfile->ff_smooth_factor) / 100.0f;
@@ -557,14 +583,6 @@ void pidAcroTrainerInit(void)
 #endif // USE_ACRO_TRAINER
 
 #ifdef USE_THRUST_LINEARIZATION
-float pidCompensateThrustLinearization(float throttle)
-{
-    if (thrustLinearization != 0.0f) {
-        throttle = throttle * (throttle * thrustLinearization + 1.0f - thrustLinearization);
-    }
-    return throttle;
-}
-
 float pidApplyThrustLinearization(float motorOutput)
 {
     if (thrustLinearization != 0.0f) {
@@ -642,10 +660,8 @@ STATIC_UNIT_TESTED float calcHorizonLevelStrength(void)
     return constrainf(horizonLevelStrength, 0, 1);
 }
 
-// Use the FAST_CODE_NOINLINE directive to avoid this code from being inlined into ITCM RAM to avoid overflow.
-// The impact is possibly slightly slower performance on F7/H7 but they have more than enough
-// processing power that it should be a non-issue.
-STATIC_UNIT_TESTED FAST_CODE_NOINLINE float pidLevel(int axis, const pidProfile_t *pidProfile, const rollAndPitchTrims_t *angleTrim, float currentPidSetpoint) {
+FAST_CODE_NOINLINE float pidLevel(int axis, const pidProfile_t *pidProfile, const rollAndPitchTrims_t *angleTrim, float currentPidSetpoint)
+{
     // calculate error angle and limit the angle to the max inclination
     // rcDeflection is in range [-1.0, 1.0]
     float angle = pidProfile->levelAngleLimit * getRcDeflection(axis);
@@ -825,7 +841,6 @@ float FAST_CODE applyRcSmoothingDerivativeFilter(int axis, float pidSetpointDelt
 #if defined(USE_ABSOLUTE_CONTROL)
 STATIC_UNIT_TESTED void applyAbsoluteControl(const int axis, const float gyroRate, float *currentPidSetpoint, float *itermErrorRate)
 {
-    UNUSED(itermErrorRate);
     if (acGain > 0 || debugMode == DEBUG_AC_ERROR) {
         const float setpointLpf = pt1FilterApply(&acLpf[axis], *currentPidSetpoint);
         const float setpointHpf = fabsf(*currentPidSetpoint - setpointLpf);
@@ -846,6 +861,20 @@ STATIC_UNIT_TESTED void applyAbsoluteControl(const int axis, const float gyroRat
         } else {
             acErrorRate = (gyroRate > gmaxac ? gmaxac : gminac ) - gyroRate;
         }
+
+        // Check to ensure we are spooled up at a reasonable level
+        if (isHeliSpooledUp()) {
+            axisError[axis] = constrainf(axisError[axis] + acErrorRate * dT,
+                -acErrorLimit, acErrorLimit);
+            const float acCorrection = constrainf(axisError[axis] * acGain, -acLimit, acLimit);
+            *currentPidSetpoint += acCorrection;
+            *itermErrorRate += acCorrection;
+            DEBUG_SET(DEBUG_AC_CORRECTION, axis, lrintf(acCorrection * 10));
+            if (axis == FD_ROLL) {
+                DEBUG_SET(DEBUG_ITERM_RELAX, 3, lrintf(acCorrection * 10));
+            }
+        }
+
         DEBUG_SET(DEBUG_AC_ERROR, axis, lrintf(axisError[axis] * 10));
     }
 }
@@ -927,16 +956,11 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
     } else {
         levelModeStartTimeUs = 0;
     }
+
     gpsRescuePreviousState = gpsRescueIsActive;
 #endif
 
-    // gradually scale back integration when above windup point
-    float dynCi = dT;
-    if (itermWindupPointInv > 1.0f) {
-        dynCi *= constrainf((1.0f - getMotorMixRange()) * itermWindupPointInv, 0.0f, 1.0f);
-    }
-
-    // Precalculate gyro deta for D-term here, this allows loop unrolling
+    // Precalculate gyro delta for D-term here, this allows loop unrolling
     float gyroRateDterm[XYZ_AXIS_COUNT];
     for (int axis = FD_ROLL; axis <= FD_YAW; ++axis) {
         gyroRateDterm[axis] = gyro.gyroADCf[axis];
@@ -966,20 +990,19 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
         if (maxVelocity[axis]) {
             currentPidSetpoint = accelerationLimit(axis, currentPidSetpoint);
         }
+
         // Yaw control is GYRO based, direct sticks control is applied to rate PID
 #if defined(USE_ACC)
         switch (levelMode) {
         case LEVEL_MODE_OFF:
-
             break;
         case LEVEL_MODE_R:
-            if (axis == FD_PITCH) {
+            if (axis == FD_PITCH)
                 break;
-            }
-
             FALLTHROUGH;
         case LEVEL_MODE_RP:
             if (axis == FD_YAW) {
+                currentPidSetpoint = 0.0f;
                 break;
             }
             currentPidSetpoint = pidLevel(axis, pidProfile, angleTrim, currentPidSetpoint);
@@ -993,10 +1016,12 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
 #endif // USE_ACRO_TRAINER
 
         // -----calculate error rate
-        const float gyroRate = gyro.gyroADCf[axis]; // Process variable from gyro output in deg/sec
-        float errorRate = currentPidSetpoint - gyroRate; // r - y
+        const float gyroRate = gyro.gyroADCf[axis];
+        float errorRate = currentPidSetpoint - gyroRate;
+
         const float previousIterm = pidData[axis].I;
         float itermErrorRate = errorRate;
+
 #ifdef USE_ABSOLUTE_CONTROL
         float uncorrectedSetpoint = currentPidSetpoint;
 #endif
@@ -1023,20 +1048,18 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
 
         // -----calculate I component
         float Ki = pidCoefficient[axis].Ki;
-        float axisDynCi = (axis == FD_YAW) ? dynCi : dT; // only apply windup protection to yaw
-        pidData[axis].I = constrainf(previousIterm + Ki * axisDynCi * itermErrorRate, -itermLimit, itermLimit);
+        pidData[axis].I = constrainf(previousIterm + Ki * dT * itermErrorRate, -itermLimit, itermLimit);
 
         // -----calculate pidSetpointDelta
         float pidSetpointDelta = 0;
 #ifdef USE_INTERPOLATED_SP
         if (ffFromInterpolatedSetpoint) {
             pidSetpointDelta = interpolatedSpApply(axis, newRcFrame, ffFromInterpolatedSetpoint);
-        } else {
+        } else
+#endif
+        {
             pidSetpointDelta = currentPidSetpoint - previousPidSetpoint[axis];
         }
-#else
-        pidSetpointDelta = currentPidSetpoint - previousPidSetpoint[axis];
-#endif
         previousPidSetpoint[axis] = currentPidSetpoint;
 
 
@@ -1052,9 +1075,7 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
             // This is done to avoid DTerm spikes that occur with dynamically
             // calculated deltaT whenever another task causes the PID
             // loop execution to be delayed.
-            const float delta =
-                - (gyroRateDterm[axis] - previousGyroRateDterm[axis]) * pidFrequency;
-
+            const float delta = (previousGyroRateDterm[axis] - gyroRateDterm[axis]) * pidFrequency;
             pidData[axis].D = pidCoefficient[axis].Kd * delta;
         } else {
             pidData[axis].D = 0;
@@ -1070,19 +1091,61 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
 
         // Only enable feedforward for rate mode (flightModeFlag=0 is acro/rate mode)
         const float feedforwardGain = (flightModeFlags) ? 0.0f : pidCoefficient[axis].Kf;
+
         if (feedforwardGain > 0) {
-            // no transition if feedForwardTransition == 0
-            float transition = feedForwardTransition > 0 ? MIN(1.f, getRcDeflectionAbs(axis) * feedForwardTransition) : 1;
-            float feedForward = feedforwardGain * transition * pidSetpointDelta * pidFrequency;
+            // transition = 1 if feedForwardTransition == 0   (no transition)
+            float transition = feedForwardTransition > 0 ? MIN(1.f, getRcDeflectionAbs(axis) * feedForwardTransition) : 1.0f;
+
+            // HF3D:  Direct stick feedforward for roll and pitch.  Stick delta feedforward for yaw.
+            // Let's do direct stick feedforward for roll & pitch, and let's AMP IT UP A LOT.
+            // 0.013754 * 90 * 1 * 60 deg/s = 74 output for 100 feedForward gain
+            float feedForward = feedforwardGain * 90.0f * transition * currentPidSetpoint;
+            if (axis == FD_YAW) {
+                feedForward = feedforwardGain * transition * pidSetpointDelta * pidFrequency;    //  Kf * 1 * 20 deg/s * 8000
+            }
 
 #ifdef USE_INTERPOLATED_SP
-            pidData[axis].F = shouldApplyFfLimits(axis) ?
-                applyFfLimit(axis, feedForward, pidCoefficient[axis].Kp, currentPidSetpoint) : feedForward;
+            // HF3D:  Only apply feedforward interpolation limits to the Yaw axis since we're using direct feedforward on the roll and pitch axes.
+            if (axis == FD_YAW) {
+                pidData[axis].F = shouldApplyFfLimits(axis) ?
+                    applyFfLimit(axis, feedForward, pidCoefficient[axis].Kp, currentPidSetpoint) : feedForward;
+            } else {
+               pidData[axis].F = feedForward;
+            }
 #else
             pidData[axis].F = feedForward;
 #endif
         } else {
             pidData[axis].F = 0;
+        }
+
+         // HF3D:  Calculate tail feedforward precompensation and add it to the pidSum on the Yaw channel
+        if (axis == FD_YAW) {
+
+            // Calculate absolute value of the percentage of collective stick throw
+            if ((rcCommand[COLLECTIVE] >= 500) || (rcCommand[COLLECTIVE] <= -500)) {
+                collectiveDeflectionAbs = 100.0f;
+            } else {
+                if (rcCommand[COLLECTIVE] >= 0) {
+                    collectiveDeflectionAbs = (rcCommand[COLLECTIVE] * 100.0f) / (PWM_RANGE_MAX - rxConfig()->midrc);
+                } else if (rcCommand[COLLECTIVE] < 0) {
+                    collectiveDeflectionAbs = (rcCommand[COLLECTIVE] * -100.0f) / (rxConfig()->midrc - PWM_RANGE_MIN);
+                }
+            }
+
+            // Collective pitch impulse feed-forward for the main motor
+            collectiveDeflectionAbsLPF = collectiveDeflectionAbsLPF + collectivePulseFilterGain * (collectiveDeflectionAbs - collectiveDeflectionAbsLPF);
+            collectiveDeflectionAbsHPF = collectiveDeflectionAbs - collectiveDeflectionAbsLPF;
+
+            float tailCollectiveFF = -1.0f * collectiveDeflectionAbs * pidProfile->yawColKf / 100.0f;
+            float tailCollectivePulseFF = -1.0f * collectiveDeflectionAbsHPF * pidProfile->yawColPulseKf / 100.0f;
+            float tailBaseThrust = -1.0f * pidProfile->yawBaseThrust / 10.0f;
+            float tailCyclicFF = -1.0f * getCyclicDeflection() * 100.0f * pidProfile->yawCycKf / 100.0f;
+
+            if ((calculateThrottlePercentAbs() > 15) || (!ARMING_FLAG(ARMED))) {
+                // if disarmed, show the user what they will get regardless of throttle value
+                pidData[FD_YAW].F += tailCollectiveFF + tailCollectivePulseFF + tailBaseThrust + tailCyclicFF;
+            }
         }
 
         // calculating the PID sum
@@ -1122,7 +1185,8 @@ void pidSetAcroTrainerState(bool newState)
 #ifdef USE_DYN_LPF
 void dynLpfDTermUpdate(float throttle)
 {
-    static unsigned int cutoffFreq;
+    unsigned int cutoffFreq;
+
     if (dynLpfFilter != DYN_LPF_NONE) {
         if (dynLpfCurveExpo > 0) {
             cutoffFreq = dynDtermLpfCutoffFreq(throttle, dynLpfMin, dynLpfMax, dynLpfCurveExpo);
@@ -1130,7 +1194,7 @@ void dynLpfDTermUpdate(float throttle)
             cutoffFreq = fmax(dynThrottle(throttle) * dynLpfMax, dynLpfMin);
         }
 
-         if (dynLpfFilter == DYN_LPF_PT1) {
+        if (dynLpfFilter == DYN_LPF_PT1) {
             for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
                 pt1FilterUpdateCutoff(&dtermLowpass[axis].pt1Filter, pt1FilterGain(cutoffFreq, dT));
             }
@@ -1143,10 +1207,10 @@ void dynLpfDTermUpdate(float throttle)
 }
 #endif
 
-float dynDtermLpfCutoffFreq(float throttle, uint16_t dynLpfMin, uint16_t dynLpfMax, uint8_t expo) {
-    const float expof = expo / 10.0f;
-    static float curve;
-    curve = throttle * (1 - throttle) * expof + throttle;
+float dynDtermLpfCutoffFreq(float throttle, uint16_t dynLpfMin, uint16_t dynLpfMax, uint8_t expo)
+{
+    float expof = expo / 10.0f;
+    float curve = throttle * (1 - throttle) * expof + throttle;
     return (dynLpfMax - dynLpfMin) * curve + dynLpfMin;
 }
 
@@ -1163,5 +1227,15 @@ float pidGetDT()
 float pidGetPidFrequency()
 {
     return pidFrequency;
+}
+
+float getCollectiveDeflectionAbs()
+{
+    return collectiveDeflectionAbs;
+}
+
+float getCollectiveDeflectionAbsHPF()
+{
+    return collectiveDeflectionAbsHPF;
 }
 

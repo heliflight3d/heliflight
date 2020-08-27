@@ -285,10 +285,10 @@ void governorUpdate(void)
             //   Reasonable value would be 0.15 throttle addition for 12-degree collective throw..
             //   So gains in the 0.0015 - 0.0032 range depending on where max collective pitch is on the heli
             //   HF3D TODO:  Set this up so works off of a calibrated pitch value for the heli taken during setup
-            float govCollectiveFF = 0; // TODO
+            float govCollectiveFF = govColKf * getCollectiveDeflectionAbs();
 
             // Collective pitch impulse feed-forward for the main motor
-            float govCollectivePulseFF = 0; // TODO
+            float govCollectivePulseFF = govColPulseKf * getCollectiveDeflectionAbsHPF();
 
             // HF3D TODO:  Add a cyclic stick feedforward to the governor - linear gain should be fine.
             // Additional torque is required from the motor when adding cyclic pitch, just like collective (although less)
@@ -296,7 +296,7 @@ void governorUpdate(void)
             // It's calculated like this in the pid.c code:
             //   Calculate absolute value of the percentage of cyclic stick throw (both combined... but swash ring is the real issue).
             //   servosGetCyclicDeflection() is a 0..1.0f value that is a fraction of the total cyclic travel allowed (usually 10 degrees)
-            float govCyclicFF = 0; // TODO
+            float govCyclicFF = govCycKf * getCyclicDeflection();
 
             // Total FeedForward
             float govFeedForward = govCollectiveFF + govCollectivePulseFF + govCyclicFF;
