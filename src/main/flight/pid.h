@@ -156,6 +156,10 @@ typedef struct pidProfile_s {
     uint8_t error_decay_always;             // Always decay accumulated I term and Abs Control error?
     uint8_t error_decay_rate;               // Rate to decay accumulated error in deg/s
     uint16_t rescue_collective;             // Collective pitch command when rescue is fully upright
+    uint16_t elevator_filter_gain;          // Elevator stop de-bounce feedforward filter gain
+    uint8_t elevator_filter_window_time;    // Time in ms that we no longer apply de-bounce inside our window
+    uint8_t elevator_filter_window_size;    // Size of the de-bounce window around center stick (0 deg/s) in degrees/second
+    uint8_t elevator_filter_hz;             // Low-pass filter cutoff frequency that is applied to our elevator setpoint.  Lower Hz = more delay on stop.
 
 } pidProfile_t;
 

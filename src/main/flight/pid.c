@@ -173,6 +173,10 @@ void resetPidProfile(pidProfile_t *pidProfile)
         .error_decay_always = 0,
         .error_decay_rate = 7,
         .rescue_collective = 200,
+        .elevator_filter_gain = 50,
+        .elevator_filter_window_time = 75,
+        .elevator_filter_window_size = 30,
+        .elevator_filter_hz = 15,
     );
 }
 
@@ -249,6 +253,9 @@ static FAST_RAM_ZERO_INIT float ffBoostFactor;
 static FAST_RAM_ZERO_INIT float ffSmoothFactor;
 static FAST_RAM_ZERO_INIT float ffSpikeLimitInverse;
 
+static FAST_RAM_ZERO_INIT filterApplyFnPtr elevatorFilterLowpassApplyFn;
+static FAST_RAM_ZERO_INIT pt1Filter_t elevatorFilterLowpass;
+
 float pidGetSpikeLimitInverse()
 {
     return ffSpikeLimitInverse;
@@ -274,6 +281,7 @@ void pidInitFilters(const pidProfile_t *pidProfile)
         dtermNotchApplyFn = nullFilterApply;
         dtermLowpassApplyFn = nullFilterApply;
         ptermYawLowpassApplyFn = nullFilterApply;
+        elevatorFilterLowpassApplyFn = nullFilterApply;
         return;
     }
 
@@ -388,6 +396,16 @@ void pidInitFilters(const pidProfile_t *pidProfile)
     //   RC = 1 / ( 2 * M_PI_FLOAT * f_cut);  ==> RC = 3.183
     //   k = dT / (RC + dT);                  ==>  k = 0.0000393 for 8kHz
     collectivePulseFilterGain = dT / (dT + (1 / ( 2 * 3.14159f * (float)pidProfile->collective_ff_impulse_freq / 100.0f)));
+
+#ifdef USE_HF3D_ELEVATOR_FILTER
+    // HF3D:  Elevator Filter (helicopter tail de-bounce)
+    if (pidProfile->elevator_filter_hz == 0 || pidProfile->elevator_filter_hz > pidFrequencyNyquist) {
+        elevatorFilterLowpassApplyFn = nullFilterApply;
+    } else {
+        elevatorFilterLowpassApplyFn = (filterApplyFnPtr)pt1FilterApply;
+        pt1FilterInit(&elevatorFilterLowpass, pt1FilterGain(pidProfile->elevator_filter_hz, dT));
+    }
+#endif
 }
 
 #ifdef USE_RC_SMOOTHING_FILTER
@@ -1302,11 +1320,39 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
         // Only enable feedforward for rate mode (flightModeFlag=0 is acro/rate mode)
         // HF3D:  Changed this so horizon & angle modes have feedforward also
         const float feedforwardGain = pidCoefficient[axis].Kf;
+        static timeUs_t lastTimeEleOutsideWindow = 0;
+        float eleOffset = 0.0f;
 
         if (feedforwardGain > 0) {
             // transition = 1 if feedForwardTransition == 0   (no transition)
             float transition = feedForwardTransition > 0 ? MIN(1.f, getRcDeflectionAbs(axis) * feedForwardTransition) : 1.0f;
 
+#ifdef USE_HF3D_ELEVATOR_FILTER
+            // Apply elevator filter to stop bounces due to sudden stops on the pitch axis near zero deg/s
+            //  These do not seem to be related to I term or Absolute control, or really any of the PID terms
+            //  High feedforward gain seems to make them worse due to the aggressive nature of the return to zero.
+            if (axis == FD_PITCH && pidProfile->elevator_filter_gain > 0) {
+                float elevatorSetpointLPF = elevatorFilterLowpassApplyFn((filter_t *) &elevatorFilterLowpass, currentPidSetpoint);
+                // Store the last time we were outside of the deg/s window we decided upon
+                if (fabsf(currentPidSetpoint) >= pidProfile->elevator_filter_window_size) {
+                    lastTimeEleOutsideWindow = currentTimeUs;
+                } else if (cmpTimeUs(currentTimeUs, lastTimeEleOutsideWindow) < (pidProfile->elevator_filter_window_time * 1000)) {
+                    // We're inside the deg/s window and we've recently been outside of it
+                    // Cutoff time for compare should be maybe 2-3x the cutoff frequency period??
+                    //  Note that this will also catch the times that we're just transiting through center quickly... which sucks, but what is the other choice??
+                    //  Luckily, the moment we get outside the window we'll go back to full blast of feedforward on the pitch axis, so it may not be very noticeable during fast stick movements.
+
+                    // Apply the elevator filter offset to help gradually slow us down.
+                    // There will be a slightly discontinuity in the pitch feedforward as we hit the elevator filter window.
+                    // Should be relative to the amount of feedforward gain.  More Kf -> More elevator offset.
+                    // elevator_filter_gain = 100 will give 1:1 offset between the LPF and setPoint.
+                    //   As we enter the window eleOffset will start high and slowly decay down to zero over time.
+                    eleOffset = (elevatorSetpointLPF - currentPidSetpoint) * feedforwardGain * 90.0f * transition * pidProfile->elevator_filter_gain / 100.0f;
+                }
+                // If it's been a while since we've been outside of our cutoff window then don't do anything different.
+                //   Otherwise we will slow down fast stick movements, and we don't want that!  We only want to change the stop characteristics around center stick.
+            }
+#endif
             // HF3D:  Direct stick feedforward for roll and pitch.  Stick delta feedforward for yaw.
             // Let's do direct stick feedforward for roll & pitch, and let's AMP IT UP A LOT.
             // 0.013754 * 90 * 1 * 60 deg/s = 74 output for 100 feedForward gain
@@ -1314,6 +1360,13 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
             if (axis == FD_YAW) {
                 feedForward = feedforwardGain * transition * pidSetpointDelta * pidFrequency;    //  Kf * 1 * 20 deg/s * 8000
             }
+#ifdef USE_HF3D_ELEVATOR_FILTER
+            else if (axis == FD_PITCH) {
+                feedForward += eleOffset;
+                // Store the elevator filter offset value into the AC_CORRECTION debug channel (absolute control) since it isn't used otherwise
+                DEBUG_SET(DEBUG_AC_CORRECTION, 3, lrintf(eleOffset));
+            }
+#endif
 
 #ifdef USE_INTERPOLATED_SP
             // HF3D:  Only apply feedforward interpolation limits to the Yaw axis since we're using direct feedforward on the roll and pitch axes.
