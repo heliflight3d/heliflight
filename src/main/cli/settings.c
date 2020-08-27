@@ -988,6 +988,9 @@ const clivalue_t valueTable[] = {
     { "error_decay_always",             VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_PID_PROFILE, offsetof(pidProfile_t, error_decay_always) },
     { "error_decay_rate",               VAR_UINT8  | PROFILE_VALUE, .config.minmaxUnsigned = { 0, 45 },PG_PID_PROFILE, offsetof(pidProfile_t, error_decay_rate) },
 #endif
+#ifdef USE_HF3D_RESCUE_MODE
+    { "rescue_collective",              VAR_UINT16 | PROFILE_VALUE, .config.minmaxUnsigned = { 50, 500 },PG_PID_PROFILE, offsetof(pidProfile_t, rescue_collective) },
+#endif
 
 // PG_TELEMETRY_CONFIG
 #ifdef USE_TELEMETRY

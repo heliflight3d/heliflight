@@ -207,6 +207,7 @@
 #define USE_SERIALRX_SUMD       // Graupner Hott protocol
 
 #define USE_HF3D_ERROR_DECAY
+#define USE_HF3D_RESCUE_MODE
 
 #if (TARGET_FLASH_SIZE > 128)
 #define PID_PROFILE_COUNT 3

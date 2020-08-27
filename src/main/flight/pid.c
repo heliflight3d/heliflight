@@ -172,6 +172,7 @@ void resetPidProfile(pidProfile_t *pidProfile)
         .collective_ff_impulse_freq = 100,
         .error_decay_always = 0,
         .error_decay_rate = 7,
+        .rescue_collective = 200,
     );
 }
 
@@ -205,6 +206,10 @@ static FAST_RAM_ZERO_INIT float collectiveDeflectionAbs;
 static FAST_RAM_ZERO_INIT float collectiveDeflectionAbsLPF;
 static FAST_RAM_ZERO_INIT float collectiveDeflectionAbsHPF;
 static FAST_RAM_ZERO_INIT float collectivePulseFilterGain;
+
+#ifdef USE_HF3D_RESCUE_MODE
+static FAST_RAM_ZERO_INIT float rescueCollective;
+#endif
 
 static FAST_RAM_ZERO_INIT filterApplyFnPtr dtermNotchApplyFn;
 static FAST_RAM_ZERO_INIT biquadFilter_t dtermNotch[XYZ_AXIS_COUNT];
@@ -581,6 +586,10 @@ void pidInitConfig(const pidProfile_t *pidProfile)
     ffSmoothFactor = 1.0f - ((float)pidProfile->ff_smooth_factor) / 100.0f;
     interpolatedSpInit(pidProfile);
 #endif
+
+#ifdef USE_HF3D_RESCUE_MODE
+    rescueCollective = pidProfile->rescue_collective;
+#endif
 }
 
 void pidInit(const pidProfile_t *pidProfile)
@@ -678,22 +687,73 @@ STATIC_UNIT_TESTED float calcHorizonLevelStrength(void)
 
 FAST_CODE_NOINLINE float pidLevel(int axis, const pidProfile_t *pidProfile, const rollAndPitchTrims_t *angleTrim, float currentPidSetpoint)
 {
-    // calculate error angle and limit the angle to the max inclination
-    // rcDeflection is in range [-1.0, 1.0]
-    float angle = pidProfile->levelAngleLimit * getRcDeflection(axis);
-#ifdef USE_GPS_RESCUE
-    angle += gpsRescueAngle[axis] / 100; // ANGLE IS IN CENTIDEGREES
-#endif
-    angle = constrainf(angle, -pidProfile->levelAngleLimit, pidProfile->levelAngleLimit);
-    const float errorAngle = angle - ((attitude.raw[axis] - angleTrim->raw[axis]) / 10.0f);
-    if (FLIGHT_MODE(ANGLE_MODE) || FLIGHT_MODE(GPS_RESCUE_MODE)) {
-        // ANGLE mode - control is angle based
+#ifdef USE_HF3D_RESCUE_MODE
+     if (FLIGHT_MODE(ANGLE_MODE)) {
+        // Angle mode is now rescue mode.
+        float errorAngle = 0.0f;
+
+        // -90 Pitch is straight up and +90 is straight down
+        // We are always pitching to "zero" whether up-right or inverted
+        //   but the control direction needed to get to up-right is different than inverted
+        // Determine if we're closer to up-right or inverted by checking for abs(roll attitude) > 90
+        // HF3D TODO:  Evaluate using hysteresis to ensure we don't get "stuck" at one of the inflection points below.
+        if (((attitude.raw[FD_ROLL] - angleTrim->raw[FD_ROLL]) / 10.0f) > 90.0f) {
+            // Rolled right closer to inverted, continue to roll right to inverted (+180 degrees)
+            if (axis == FD_PITCH) {
+                errorAngle = 0.0f + ((attitude.raw[axis] - angleTrim->raw[axis]) / 10.0f);
+            } else if (axis == FD_ROLL) {
+                errorAngle = 180.0f - ((attitude.raw[axis] - angleTrim->raw[axis]) / 10.0f);
+            }
+        } else if (((attitude.raw[FD_ROLL] - angleTrim->raw[FD_ROLL]) / 10.0f) < -90.0f) {
+            // Rolled left closer to inverted, continue to roll left to inverted (-180 degrees)
+            if (axis == FD_PITCH) {
+                errorAngle = 0.0f + ((attitude.raw[axis] - angleTrim->raw[axis]) / 10.0f);
+            } else if (axis == FD_ROLL) {
+                errorAngle = -180.0f - ((attitude.raw[axis] - angleTrim->raw[axis]) / 10.0f);
+            }
+        } else {
+            // We're rolled left or right between -90 and 90, and thus are closer to up-right (0 degrees aka skids down)
+            if (axis == FD_PITCH) {
+                errorAngle = 0.0f - ((attitude.raw[axis] - angleTrim->raw[axis]) / 10.0f);
+            } else if (axis == FD_ROLL) {
+                errorAngle = 0.0f - ((attitude.raw[axis] - angleTrim->raw[axis]) / 10.0f);
+            }
+        }
+        // NOTE:  If you want to level to only up-right, it would probably be best to just level inverted and
+        //   then flip to upright later on.
+        //   But if you really can only level to up-right (no negative collective avaiable), then it's probably
+        //     best to flip use the pitch direction logic above but just always roll back to up-right.
+        //   That way you will be putting in the correct pitch direction while you're inverted also.  Otherwise
+        //     you will be putting in the wrong pitch correction during the time you're inverted.  Not good, especially
+        //     since "roll" gets wonky near straight up/down.
         currentPidSetpoint = errorAngle * levelGain;
-    } else {
-        // HORIZON mode - mix of ANGLE and ACRO modes
-        // mix in errorAngle to currentPidSetpoint to add a little auto-level feel
-        const float horizonLevelStrength = calcHorizonLevelStrength();
-        currentPidSetpoint = currentPidSetpoint + (errorAngle * horizonGain * horizonLevelStrength);
+     }
+     else
+#endif
+     {
+        // Horizon and GPS Rescue modes
+        // calculate error angle and limit the angle to the max inclination
+        // rcDeflection is in range [-1.0, 1.0]
+        float angle = pidProfile->levelAngleLimit * getRcDeflection(axis);
+
+        // HF3D TODO:  Think about fixing GPS rescue for level/inverted rescue... probably just need to only make it worth it non-inverted rescue
+
+#ifdef USE_GPS_RESCUE
+        angle += gpsRescueAngle[axis] / 100; // ANGLE IS IN CENTIDEGREES
+#endif
+        angle = constrainf(angle, -pidProfile->levelAngleLimit, pidProfile->levelAngleLimit);
+
+        const float errorAngle = angle - ((attitude.raw[axis] - angleTrim->raw[axis]) / 10.0f);
+
+        if (FLIGHT_MODE(GPS_RESCUE_MODE)) {
+            // ANGLE mode - control is angle based
+            currentPidSetpoint = errorAngle * levelGain;
+        } else {
+            // HORIZON mode - mix of ANGLE and ACRO modes
+            // mix in errorAngle to currentPidSetpoint to add a little auto-level feel
+            const float horizonLevelStrength = calcHorizonLevelStrength();
+            currentPidSetpoint = currentPidSetpoint + (errorAngle * horizonGain * horizonLevelStrength);
+        }
     }
     return currentPidSetpoint;
 }
@@ -1240,7 +1300,8 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
 #endif
 
         // Only enable feedforward for rate mode (flightModeFlag=0 is acro/rate mode)
-        const float feedforwardGain = (flightModeFlags) ? 0.0f : pidCoefficient[axis].Kf;
+        // HF3D:  Changed this so horizon & angle modes have feedforward also
+        const float feedforwardGain = pidCoefficient[axis].Kf;
 
         if (feedforwardGain > 0) {
             // transition = 1 if feedForwardTransition == 0   (no transition)
@@ -1427,3 +1488,9 @@ float getCollectiveDeflectionAbsHPF()
     return collectiveDeflectionAbsHPF;
 }
 
+#ifdef USE_HF3D_RESCUE_MODE
+uint16_t pidGetRescueCollectiveSetting()
+{
+    return rescueCollective;
+}
+#endif
