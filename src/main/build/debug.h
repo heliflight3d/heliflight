@@ -113,6 +113,10 @@ typedef enum {
     DEBUG_GYRO_SAMPLE,
     DEBUG_RX_TIMING,
     DEBUG_FREQ_SENSOR,
+    DEBUG_USER1,
+    DEBUG_USER2,
+    DEBUG_USER3,
+    DEBUG_USER4,
     DEBUG_COUNT
 } debugType_e;
 
