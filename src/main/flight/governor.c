@@ -113,8 +113,8 @@ void governorInit(void)
     govKp            = (float)governorConfig()->gov_p_gain / 10.0;
     govKi            = (float)governorConfig()->gov_i_gain / 10.0;
     govCycKf         = (float)governorConfig()->gov_cyclic_ff_gain / 100.0;
-    govColKf         = (float)governorConfig()->gov_collective_ff_gain / 10000.0;
-    govColPulseKf    = (float)governorConfig()->gov_collective_ff_impulse_gain / 10000.0;
+    govColKf         = (float)governorConfig()->gov_collective_ff_gain / 100.0;
+    govColPulseKf    = (float)governorConfig()->gov_collective_ff_impulse_gain / 100.0;
 }
 
 

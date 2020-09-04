@@ -1386,16 +1386,8 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
          // HF3D:  Calculate tail feedforward precompensation and add it to the pidSum on the Yaw channel
         if (axis == FD_YAW) {
 
-            // Calculate absolute value of the percentage of collective stick throw
-            if ((rcCommand[COLLECTIVE] >= 500) || (rcCommand[COLLECTIVE] <= -500)) {
-                collectiveDeflectionAbs = 100.0f;
-            } else {
-                if (rcCommand[COLLECTIVE] >= 0) {
-                    collectiveDeflectionAbs = (rcCommand[COLLECTIVE] * 100.0f) / (PWM_RANGE_MAX - rxConfig()->midrc);
-                } else if (rcCommand[COLLECTIVE] < 0) {
-                    collectiveDeflectionAbs = (rcCommand[COLLECTIVE] * -100.0f) / (rxConfig()->midrc - PWM_RANGE_MIN);
-                }
-            }
+            // Calculate absolute value of collective stick throw
+            collectiveDeflectionAbs = fabs(rcCommand[COLLECTIVE] / 500.0);
 
             // Collective pitch impulse feed-forward for the main motor
             // Run collectiveDeflectionAbs through a low pass filter
@@ -1405,14 +1397,15 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
             //  Cutoff frequency determines this action.
             collectiveDeflectionAbsHPF = collectiveDeflectionAbs - collectiveDeflectionAbsLPF;
 
-            // HF3D TODO:  Negative because of clockwise main rotor spin direction -> CCW body torque on helicopter
-            //   Implement a configuration parameter for rotor rotation direction
-            float tailCollectiveFF = -1.0f * collectiveDeflectionAbs * pidProfile->yawColKf / 100.0f;
-            float tailCollectivePulseFF = -1.0f * collectiveDeflectionAbsHPF * pidProfile->yawColPulseKf / 100.0f;
-            float tailBaseThrust = -1.0f * pidProfile->yawBaseThrust / 10.0f;
+            float tailCollectiveFF = collectiveDeflectionAbs * pidProfile->yawColKf;
+            float tailCollectivePulseFF = collectiveDeflectionAbsHPF * pidProfile->yawColPulseKf;
+            float tailBaseThrust = pidProfile->yawBaseThrust / 10.0f;
 
-            // Calculate absolute value of the percentage of cyclic stick throw (both combined... but swash ring is the real issue).
-            float tailCyclicFF = -1.0f * getCyclicDeflection() * 100.0f * pidProfile->yawCycKf / 100.0f;
+            // Calculate absolute value of cyclic stick throw
+            float tailCyclicFF = getCyclicDeflection() * pidProfile->yawCycKf;
+
+            // Calculate total tail feedforward
+            float tailTotalFF = tailCollectiveFF + tailCollectivePulseFF + tailBaseThrust + tailCyclicFF;
 
             // Main motor torque increase from the ESC is proportional to the absolute change in average voltage (NOT percent change in average voltage)
             //     and it is linear with the amount of change.
@@ -1442,7 +1435,9 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
             // HF3D TODO:  Add a configurable override for this check in case someone wants to run an external governor without passing the throttle signal through the flight controller?
             if ((calculateThrottlePercentAbs() > 15) || (!ARMING_FLAG(ARMED))) {
                 // if disarmed, show the user what they will get regardless of throttle value
-                pidData[FD_YAW].F += tailCollectiveFF + tailCollectivePulseFF + tailBaseThrust + tailCyclicFF;
+                // HF3D TODO:  Negative because of clockwise main rotor spin direction -> CCW body torque on helicopter
+                //   Implement a configuration parameter for rotor rotation direction
+                pidData[FD_YAW].F -= tailTotalFF;
             }
 
             // HF3D TODO:  Do some integration of the motor driven tail code here for motorCount == 2...
