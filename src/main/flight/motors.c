@@ -42,6 +42,7 @@
 #include "drivers/io.h"
 
 #include "sensors/esc_sensor.h"
+#include "sensors/gyro.h"
 
 #include "io/motors.h"
 
@@ -67,8 +68,9 @@ FAST_RAM_ZERO_INIT float          motorOutputStop;
 FAST_RAM_ZERO_INIT float          motorOutputRange;
 FAST_RAM_ZERO_INIT float          motorOutputDisarmed[MAX_SUPPORTED_MOTORS];
 
+FAST_RAM_ZERO_INIT float          motorRpm[MAX_SUPPORTED_MOTORS];
 FAST_RAM_ZERO_INIT uint8_t        motorRpmSource[MAX_SUPPORTED_MOTORS];
-FAST_RAM_ZERO_INIT pt1Filter_t    motorRpmFilter[MAX_SUPPORTED_MOTORS];
+FAST_RAM_ZERO_INIT biquadFilter_t motorRpmFilter[MAX_SUPPORTED_MOTORS];
 
 
 bool isRpmSourceActive(void)
@@ -101,7 +103,7 @@ int calcMotorRpm(uint8_t motorNumber, int erpm)
 int getMotorRPM(uint8_t motor)
 {
     if (motor < motorCount)
-        return motorRpmFilter[motor].state;
+        return motorRpm[motor];
     else
         return 0;
 }
@@ -159,7 +161,7 @@ void rpmSourceInit(void)
         }
 
         int freq = constrain(motorConfig()->motorRpmLpf[i], 1, 1000);
-        pt1FilterInit(&motorRpmFilter[i], pt1FilterGain(freq, pidGetDT()));
+        biquadFilterInitLPF(&motorRpmFilter[i], freq, gyro.targetLooptime);
     }
 }
 
@@ -208,8 +210,8 @@ void motorUpdate(void)
     }
 
     for (int i = 0; i < motorCount; i++) {
-        pt1FilterApply(&motorRpmFilter[i], calcMotorRpm(i,getMotorERPM(i)));
-        DEBUG_SET(DEBUG_RPM_SOURCE, i, motorRpmFilter[i].state);
+        motorRpm[i] = biquadFilterApply(&motorRpmFilter[i], calcMotorRpm(i,getMotorERPM(i)));
+        DEBUG_SET(DEBUG_RPM_SOURCE, i, motorRpm[i]);
     }
 }
 
