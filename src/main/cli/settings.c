@@ -804,6 +804,9 @@ const clivalue_t valueTable[] = {
     { "gov_collective_ff_gain",     VAR_UINT16 |  MASTER_VALUE,  .config.minmaxUnsigned = { 0, 500 }, PG_GOVERNOR_CONFIG, offsetof(governorConfig_t, gov_collective_ff_gain) },
     { "gov_collective_ff_impulse_gain",  VAR_UINT16 |  MASTER_VALUE, .config.minmaxUnsigned = { 0, 500 }, PG_GOVERNOR_CONFIG, offsetof(governorConfig_t, gov_collective_ff_impulse_gain) },
     { "gov_spoolup_time",           VAR_UINT8 |  MASTER_VALUE,  .config.minmaxUnsigned = { 0, 30 }, PG_GOVERNOR_CONFIG, offsetof(governorConfig_t, gov_spoolup_time) },
+#ifdef USE_HF3D_ASSISTED_TAIL
+    { "gov_tailmotor_assist_gain",  VAR_UINT16 |  MASTER_VALUE, .config.minmaxUnsigned = { 0, 300 }, PG_GOVERNOR_CONFIG, offsetof(governorConfig_t, gov_tailmotor_assist_gain) },
+#endif
 
 // PG_SERVO_CONFIG
 #ifdef USE_SERVOS

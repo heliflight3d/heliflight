@@ -31,6 +31,7 @@ typedef struct governorConfig_s {
     uint16_t gov_cyclic_ff_gain;
     uint16_t gov_collective_ff_gain;
     uint16_t gov_collective_ff_impulse_gain;
+    uint16_t gov_tailmotor_assist_gain;
 } governorConfig_t;
 
 PG_DECLARE(governorConfig_t, governorConfig);

@@ -256,6 +256,9 @@ static FAST_RAM_ZERO_INIT float ffSpikeLimitInverse;
 static FAST_RAM_ZERO_INIT filterApplyFnPtr elevatorFilterLowpassApplyFn;
 static FAST_RAM_ZERO_INIT pt1Filter_t elevatorFilterLowpass;
 
+static FAST_RAM_ZERO_INIT float pidSumHighLimitYaw;
+
+
 float pidGetSpikeLimitInverse()
 {
     return ffSpikeLimitInverse;
@@ -608,6 +611,21 @@ void pidInitConfig(const pidProfile_t *pidProfile)
 #ifdef USE_HF3D_RESCUE_MODE
     rescueCollective = pidProfile->rescue_collective;
 #endif
+
+#ifdef USE_HF3D_ASSISTED_TAIL
+    // If we're using a tail motor, calculate the maximum ability to assist in the main motor torque direction.
+    //   The idea here is that if we have a large gain, then that means our main motor doesn't have
+    //   much authority to drive the tail, and thus the pid controller probably needs to know that
+    //   we can't help it much. If the assist gain is small, then that means our main motor torque
+    //   probably has a lot of authority over the yaw axis.
+    if (getMotorCount() > 1 && governorConfig()->gov_tailmotor_assist_gain > 0) {
+        float limit = 0.15f * MIXER_PID_SCALING / ((float)governorConfig()->gov_tailmotor_assist_gain / 100.0f);
+        pidSumHighLimitYaw = constrain(limit, 0, currentPidProfile->pidSumLimitYaw);
+    } else
+#endif
+    {
+        pidSumHighLimitYaw = pidProfile->pidSumLimitYaw;
+    }
 }
 
 void pidInit(const pidProfile_t *pidProfile)
@@ -1260,6 +1278,10 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
         if (axis == FD_ROLL || axis == FD_PITCH) {
             // Don't accumulate error if we hit our pidsumLimit on the previous loop through.
             if (fabsf(pidData[axis].Sum) >= pidProfile->pidSumLimit) {
+                Ki = 0;
+            }
+        } else { // FD_YAW
+            if (pidData[axis].Sum >= pidSumHighLimitYaw || pidData[axis].Sum <= -pidProfile->pidSumLimitYaw) {
                 Ki = 0;
             }
         }

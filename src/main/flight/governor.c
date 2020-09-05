@@ -74,6 +74,7 @@ PG_RESET_TEMPLATE(governorConfig_t, governorConfig,
     .gov_cyclic_ff_gain = 0,
     .gov_collective_ff_gain = 0,
     .gov_collective_ff_impulse_gain = 0,
+    .gov_tailmotor_assist_gain = 0,
 );
 
 
@@ -127,6 +128,9 @@ void governorUpdate(void)
     // Handle main motor throttle output & spool-up
     if (getMotorCount() > 0) {
 
+        // If ramp is set to 5s then this will allow 20% change in 1 second, or 10% headspeed in 0.5 seconds.
+        float setPointRampRate = govRampRate * govMaxHeadspeed;
+
         // Calculate headspeed
         headSpeed = getMotorRPM(0) / govGearRatio;
 
@@ -150,17 +154,13 @@ void governorUpdate(void)
                 govSetpointLimited = headSpeed;
             }
 
-            // Increment or decrement the rate limited governor setpoint if needed
-            // If ramp is set to 5s then this will allow 20% change in 1 second, or 10% headspeed in 0.5 seconds.
-            float setPointRampRate = govRampRate * govMaxHeadspeed;
-
             // Check to see if we've been govSpooledUp recently .  If so, increase our setPointRampRate greatly to help recover from temporary loss of throttle signal.
             // HF3D TODO:  If someone immediately plugged in their heli, armed, and took off throttle hold we could accidentally hit this fast governor ramp.  That would be crazy... but possible I guess?
             if (govSpooledUp && cmp32(millis(),lastSpoolEndTime) < 5000) {
                 setPointRampRate *= 7.0f;
             }
 
-            // Apply ramprate
+            // Increment or decrement the rate limited governor setpoint if needed
             if ((govSetpoint - govSetpointLimited) > setPointRampRate) {
                 // Setpoint is higher than the rate limited setpoint, so increment limited setpoint higher
                 govSetpointLimited = constrainf(govSetpointLimited + setPointRampRate, govSetpointLimited, govSetpoint);
@@ -280,6 +280,25 @@ void governorUpdate(void)
         // --------------- Governor Logic --------------------
         if (govSpooledUp && govSetpoint > 0.0) {
 
+            float govTailmotorAssist = 0.0f;
+
+#ifdef USE_HF3D_ASSISTED_TAIL
+            // If using a motor-driven tail, allow the governor to help the tail motor to yaw in the main motor torque direction
+            //   It's more important that we maintain tail authority than it is to prevent overspeeds.
+            //   Constrain the main motor throttle assist to 15%
+            // HF3D TODO:  Using govSetpointLimited to handle the ramp back down after tailmotor assist is a bit of a hack...
+            if (motorCount > 1) {
+                // NOTE:  Make sure to update pidSumHighLimiYaw in pid.c if the 0.15f constraint is changed.
+                govTailmotorAssist = constrainf((float)governorConfig()->gov_tailmotor_assist_gain / 100.0f * pidData[FD_YAW].SumLim * MIXER_PID_SCALING, 0.0f, 0.15f);
+                // Don't allow the governor to regulate down while we're assisting the tail motor unless we're more than 15% over our governor's headspeed setpoint
+                if (headSpeed > govSetpointLimited && headSpeed < govSetpoint*1.15f) {
+                    // Increase the rate-limited setpoint so that it tracks the headspeed higher and prevents the govPgain from offsetting our tailmotor assist
+                    //   5x ramp rate was chosen because that's about how fast you need to be able to track the headspeed increase for a fast burst of throttle
+                    //   Need to increase govSetpointLimited 1x faster than desired ramp rate because it will be decremented by ramp rate in the governor spoolup code above
+                    govSetpointLimited = constrainf(govSetpointLimited + 6.0f*setPointRampRate, govSetpointLimited, headSpeed);
+                }
+            }
+#endif
             // Quick and dirty collective pitch linear feed-forward for the main motor
             // Calculate linear feedforward vs. collective stick position (always positive adder)
             //   Reasonable value would be 0.15 throttle addition for 12-degree collective throw..
@@ -322,7 +341,7 @@ void governorUpdate(void)
             //            to keep torque equal, so those shouldn't have to change.
 
             // Generate our new governed throttle signal
-            govMain = govBaseThrottle + govFeedForward + govPidSum;
+            govMain = govBaseThrottle + govFeedForward + govPidSum + govTailmotorAssist;
 
             // Reset any wind-up due to excess control signal
             if (govMain > 1.0) {
