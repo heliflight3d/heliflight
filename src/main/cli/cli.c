@@ -2043,7 +2043,7 @@ static void printServo(dumpFlags_t dumpMask, const servoParam_t *servoParams, co
             equalsDefault = !memcmp(servoConf, defaultServoConf, sizeof(*servoConf));
             headingStr = cliPrintSectionHeading(dumpMask, !equalsDefault, headingStr);
             cliDefaultPrintLinef(dumpMask, equalsDefault, format,
-                i,
+                i + 1,
                 defaultServoConf->min,
                 defaultServoConf->max,
                 defaultServoConf->mid,
@@ -2052,7 +2052,7 @@ static void printServo(dumpFlags_t dumpMask, const servoParam_t *servoParams, co
             );
         }
         cliDumpPrintLinef(dumpMask, equalsDefault, format,
-            i,
+            i + 1,
             servoConf->min,
             servoConf->max,
             servoConf->mid,
@@ -2064,79 +2064,117 @@ static void printServo(dumpFlags_t dumpMask, const servoParam_t *servoParams, co
 
 static void cliServo(const char *cmdName, char *cmdline)
 {
-    const char *format = "servo %u %d %d %d %d %d";
-    servoParam_t *servo;
-    char *ptr;
-    int i;
+    enum { FUNC=0, ARGS_MAX=6 };
+    char *args[ARGS_MAX];
+    char *saveptr, *ptr;
+    int count = 0;
 
-    if (isEmpty(cmdline)) {
+    ptr = strtok_r(cmdline, " ", &saveptr);
+    while (ptr && count < ARGS_MAX) {
+        args[count++] = ptr;
+        ptr = strtok_r(NULL, " ", &saveptr);
+    }
+
+    if (count == 0) {
         printServo(DUMP_MASTER, servoParams(0), NULL, NULL);
-    } else {
-        enum { INDEX = 0, MIN, MAX, MID, RATE, FREQ, ARGS_COUNT };
-        int16_t args[ARGS_COUNT];
-        int validArgumentCount = 0;
-
-        ptr = cmdline;
-
-        // Command line is integers (possibly negative) separated by spaces, no other characters allowed.
-
-        // If command line doesn't fit the format, don't modify the config
-        while (*ptr) {
-            if (*ptr == '-' || (*ptr >= '0' && *ptr <= '9')) {
-                if (validArgumentCount >= ARGS_COUNT) {
-                    cliShowInvalidArgumentCountError(cmdName);
-                    return;
-                }
-
-                args[validArgumentCount++] = atoi(ptr);
-
-                do {
-                    ptr++;
-                } while (*ptr >= '0' && *ptr <= '9');
-            } else if (*ptr == ' ') {
-                ptr++;
-            } else {
-                cliShowParseError(cmdName);
-                return;
+    }
+    else if (strcasecmp(args[FUNC], "status") == 0) {
+        for (int i=0; i<MAX_SUPPORTED_SERVOS; i++) {
+            if (servoOverride[i] == SERVO_OVERRIDE_OFF)
+                cliPrintLinef("servo %d %d", i+1, servo[i]);
+            else
+                cliPrintLinef("servo %d %d [override]", i+1, servoOverride[i]);
+        }
+    }
+    else if (strcasecmp(args[FUNC], "override") == 0) {
+        if (count == 1) {
+            for (int i=0; i<MAX_SUPPORTED_SERVOS; i++) {
+                if (servoOverride[i] == SERVO_OVERRIDE_OFF)
+                    cliPrintLinef("servo override %d off", i+1);
+                else
+                    cliPrintLinef("servo override %d %d", i+1, servoOverride[i]);
             }
         }
-
-        i = args[INDEX];
-
-        // Check we got the right number of args and the servo index is correct (don't validate the other values)
-        if (validArgumentCount != ARGS_COUNT || i < 0 || i >= MAX_SUPPORTED_SERVOS) {
-            cliShowInvalidArgumentCountError(cmdName);
-            return;
+        else if (count == 2) {
+            enum { FUNC=0, VALUE };
+            int value;
+            if (strcasecmp(args[VALUE], "off") == 0) {
+                value = SERVO_OVERRIDE_OFF;
+            }
+            else {
+                value = atoi(args[VALUE]);
+                if (value < SERVO_OVERRIDE_MIN || value > SERVO_OVERRIDE_MAX) {
+                    cliShowArgumentRangeError(cmdName, NULL, 0, 0);
+                    return;
+                }
+            }
+            for (int i=0; i<MAX_SUPPORTED_SERVOS; i++) {
+                servoOverride[i] = value;
+            }
         }
-
-        servo = servoParamsMutable(i);
-
-        if (
-            args[MIN] > args[MAX] ||
-            args[MIN] < PWM_SERVO_PULSE_MIN || args[MIN] > PWM_SERVO_PULSE_MAX ||
-            args[MAX] < PWM_SERVO_PULSE_MIN || args[MAX] > PWM_SERVO_PULSE_MAX ||
-            args[MID] < args[MIN] || args[MID] > args[MAX] ||
-            args[RATE] < -1000 || args[RATE] > 1000 ||
-            args[FREQ] < -1 || args[FREQ] > 500
-        ) {
+        else if (count == 3) {
+            enum { FUNC=0, INDEX, VALUE };
+            int index, value;
+            if (strcasecmp(args[INDEX], "all") == 0)
+                index = 0;
+            else
+                index = atoi(args[INDEX]);
+            if (strcasecmp(args[VALUE], "off") == 0)
+                value = SERVO_OVERRIDE_OFF;
+            else
+                value = atoi(args[VALUE]);
+            if (index < 0 || index > MAX_SUPPORTED_SERVOS) {
+                cliShowArgumentRangeError(cmdName, NULL, 0, 0);
+                return;
+            }
+            if ((value < SERVO_OVERRIDE_MIN || value > SERVO_OVERRIDE_MAX) && value != SERVO_OVERRIDE_OFF) {
+                cliShowArgumentRangeError(cmdName, NULL, 0, 0);
+                return;
+            }
+            if (index == 0) {
+                for (int i=0; i<MAX_SUPPORTED_SERVOS; i++)
+                    servoOverride[i] = value;
+            } else {
+                servoOverride[index - 1] = value;
+            }
+        }
+        else {
+            cliShowInvalidArgumentCountError(cmdName);
+        }
+    }
+    else if (count == 6) {
+        const char *format = "servo %d %d %d %d %d %d";
+        enum { INDEX = 0, MIN, MAX, MID, RATE, FREQ, ARGS_COUNT };
+        int vals[ARGS_COUNT];
+        for (int i=0; i<ARGS_COUNT; i++)
+            vals[i] = atoi(args[i]);
+        if (vals[INDEX] < 1 || vals[INDEX] > MAX_SUPPORTED_SERVOS ||
+            vals[MIN] < PWM_SERVO_PULSE_MIN || vals[MIN] > PWM_SERVO_PULSE_MAX ||
+            vals[MAX] < PWM_SERVO_PULSE_MIN || vals[MAX] > PWM_SERVO_PULSE_MAX ||
+            vals[MIN] > vals[MAX] || vals[MID] < vals[MIN] || vals[MID] > vals[MAX] ||
+            vals[RATE] < -2000 || vals[RATE] > 2000 ||
+            vals[FREQ] < -1 || vals[FREQ] > 500) {
             cliShowArgumentRangeError(cmdName, NULL, 0, 0);
             return;
         }
-
-        servo->min = args[MIN];
-        servo->max = args[MAX];
-        servo->mid = args[MID];
-        servo->rate = args[RATE];
-        servo->freq = args[FREQ];
-
+        int index = vals[INDEX] - 1;
+        servoParam_t *servo = servoParamsMutable(index);
+        servo->min = vals[MIN];
+        servo->max = vals[MAX];
+        servo->mid = vals[MID];
+        servo->rate = vals[RATE];
+        servo->freq = vals[FREQ];
         cliDumpPrintLinef(0, false, format,
-            i,
+            index,
             servo->min,
             servo->max,
             servo->mid,
             servo->rate,
             servo->freq
         );
+    }
+    else {
+        cliShowParseError(cmdName);
     }
 }
 #endif

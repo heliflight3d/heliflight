@@ -38,6 +38,7 @@
 
 #include "drivers/pwm_output.h"
 
+#include "fc/runtime_config.h"
 #include "fc/rc_controls.h"
 #include "fc/rc_modes.h"
 
@@ -53,6 +54,8 @@
 FAST_RAM_ZERO_INIT int16_t servo[MAX_SUPPORTED_SERVOS];
 
 FAST_RAM_ZERO_INIT biquadFilter_t servoFilter[MAX_SUPPORTED_SERVOS];
+
+int16_t servoOverride[MAX_SUPPORTED_SERVOS];
 
 
 PG_REGISTER_WITH_RESET_FN(servoConfig_t, servoConfig, PG_SERVO_CONFIG, 0);
@@ -86,6 +89,7 @@ void servoInit(void)
     servoDevInit(&servoConfig()->dev);
     
     for (int i = 0; i < MAX_SUPPORTED_SERVOS; i++) {
+        servoOverride[i] = SERVO_OVERRIDE_OFF;
         if (servoParams(i)->freq > 0) {
             biquadFilterInitLPF(&servoFilter[i], servoParams(i)->freq, targetPidLooptime);
         }
@@ -101,7 +105,11 @@ void servoUpdate(void)
         if (servoParams(i)->freq > 0)
             pwm = biquadFilterApply(&servoFilter[i], pwm);
 
-        servo[i] = constrain(pwm, servoParams(i)->min, servoParams(i)->max);
+        if (!ARMING_FLAG(ARMED) && servoOverride[i] != SERVO_OVERRIDE_OFF)
+            servo[i] = servoOverride[i];
+        else
+            servo[i] = constrain(pwm, servoParams(i)->min, servoParams(i)->max);
+
         pwmWriteServo(i, servo[i]);
     }
 }

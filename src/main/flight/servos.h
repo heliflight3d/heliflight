@@ -26,6 +26,10 @@
 #define DEFAULT_SERVO_MAX     2000
 #define DEFAULT_SERVO_CENTER  1500
 
+#define SERVO_OVERRIDE_OFF    0
+#define SERVO_OVERRIDE_MIN    PWM_SERVO_PULSE_MIN
+#define SERVO_OVERRIDE_MAX    PWM_SERVO_PULSE_MAX
+
 typedef struct servoParam_s {
     int16_t min;    // servo min
     int16_t max;    // servo max
@@ -43,6 +47,7 @@ typedef struct servoConfig_s {
 PG_DECLARE(servoConfig_t, servoConfig);
 
 extern int16_t servo[MAX_SUPPORTED_SERVOS];
+extern int16_t servoOverride[MAX_SUPPORTED_SERVOS];
 
 void servoInit(void);
 void servoUpdate(void);
