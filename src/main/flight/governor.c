@@ -287,7 +287,7 @@ void governorUpdate(void)
             //   It's more important that we maintain tail authority than it is to prevent overspeeds.
             //   Constrain the main motor throttle assist to 15%
             // HF3D TODO:  Using govSetpointLimited to handle the ramp back down after tailmotor assist is a bit of a hack...
-            if (motorCount > 1) {
+            if ((motorCount > 1) && (pidData[FD_YAW].SumLim > 0.0f)) {
                 // NOTE:  Make sure to update pidSumHighLimiYaw in pid.c if the 0.15f constraint is changed.
                 govTailmotorAssist = constrainf((float)governorConfig()->gov_tailmotor_assist_gain / 100.0f * pidData[FD_YAW].SumLim * MIXER_PID_SCALING, 0.0f, 0.15f);
                 // Don't allow the governor to regulate down while we're assisting the tail motor unless we're more than 15% over our governor's headspeed setpoint
@@ -410,8 +410,10 @@ void governorUpdate(void)
     // HF3D TODO:  Eventually need to support motor driven + variable pitch combination tails
     if (getMotorCount() > 1) {
 
-        // motorMix for tail motor should be 100% stabilized yaw channel
-        float pidSum = pidData[FD_YAW].SumLim * MIXER_PID_SCALING;
+        // motorMix for tail motor should be 100% of the inverted stabilized yaw channel
+        //  Negative yaw pidSum ==> Tail motor spins
+        //  Positive yaw pidSum ==> Main motor gov assist
+        float pidSum = pidData[FD_YAW].SumLim * MIXER_PID_SCALING * -1.0f;
 
         //  For a tail motor.. we don't really want it spinning like crazy from base thrust anytime we're armed,
         //   so tone it down a bit using the main motor throttle as a gain until we're at half our throttle setting or something.
