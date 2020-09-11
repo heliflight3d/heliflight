@@ -430,6 +430,16 @@ void governorUpdate(void)
         govTail = pidApplyThrustLinearization(govTail);
 #endif
 
+        // Tail motor should never stop while flying in the air - if the ESC fails to restart it quickly bad things happen
+        // Use dshot_idle_value to prevent tail from stopping when main motor is running
+        // HF3D TODO:  Rename dshot_idle_value to tail_motor_idle if we're not using it for anything else?
+        if (throttle > 0.0) {
+            govTail = constrainf(govTail, motorConfig()->digitalIdleOffsetValue * 0.0001f, 1.0f);
+        } else {
+            // Allow the tail motor to come to a complete stop when throttle is zero.
+            govTail = constrainf(govTail, 0.0, 1.0f);
+        }
+
 #ifdef DEBUG_GOV_TAIL
         DEBUG_SET(DEBUG_GOVERNOR, 0, throttle * 1000);
         DEBUG_SET(DEBUG_GOVERNOR, 1, pidSum * 1000);
