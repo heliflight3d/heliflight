@@ -50,13 +50,13 @@
 
 PG_REGISTER_ARRAY(mixer_t, MIXER_RULE_COUNT, mixerRules, PG_HELI_MIXER, 0);
 
-
 FAST_RAM_ZERO_INIT uint8_t mixerActiveServos;
 FAST_RAM_ZERO_INIT uint8_t mixerActiveMotors;
 
 FAST_RAM_ZERO_INIT uint8_t mixerRuleCount;
 
 FAST_RAM_ZERO_INIT mixer_t mixer[MIXER_RULE_COUNT];
+FAST_RAM_ZERO_INIT int16_t mixScales[MIXER_INPUT_COUNT];
 
 FAST_RAM_ZERO_INIT float mixerInput[MIXER_INPUT_COUNT];
 FAST_RAM_ZERO_INIT float mixerOutput[MIXER_OUTPUT_COUNT];
@@ -66,6 +66,14 @@ FAST_RAM_ZERO_INIT int16_t mixerOverride[MIXER_INPUT_COUNT];
 FAST_RAM_ZERO_INIT float cyclicTotal;
 FAST_RAM_ZERO_INIT float cyclicLimit;
 
+PG_REGISTER_WITH_RESET_FN(mixscale_t, mixerScales, PG_HELI_MIXER_SCALES, 0);
+
+void pgResetFn_mixerScales(mixscale_t *mixerScales)
+{
+    for (unsigned index = 0; index < MIXER_INPUT_COUNT; index++) {
+        mixerScales->scale[index] = 1000;
+    }
+}
 
 void mixerInit(void)
 {
@@ -99,6 +107,7 @@ void mixerInit(void)
 
     for (int i = 1; i < MIXER_INPUT_COUNT; i++) {
         mixerOverride[i] = MIXER_OVERRIDE_OFF;
+        mixScales[i] = constrain(mixerScales()->scale[i], -2000, 2000);
     }
 
     mixerInitProfile();
@@ -157,7 +166,6 @@ void mixerUpdate(void)
         }
     }
 
-
     // Reset outputs
     for (int i = 0; i < MIXER_OUTPUT_COUNT; i++) {
         mixerOutput[i] = 0;
@@ -167,7 +175,7 @@ void mixerUpdate(void)
     for (int i = 0; i < mixerRuleCount; i++) {
         int src = mixer[i].input;
         int dst = mixer[i].output;
-        float val = constrainf(mixer[i].offset + mixerInput[src] * mixer[i].rate, mixer[i].min, mixer[i].max) / 1000.0f;
+        float val = constrainf(mixer[i].offset + mixerInput[src] * mixer[i].rate * mixScales[src]/1000.0f, mixer[i].min, mixer[i].max) / 1000.0f;
 
         switch (mixer[i].oper)
         {

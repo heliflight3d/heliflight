@@ -153,6 +153,7 @@
 #define PG_FREQ_CONFIG 554
 #define PG_HELI_MIXER 555
 #define PG_GOVERNOR_CONFIG 556
+#define PG_HELI_MIXER_SCALES 557
 
 // OSD configuration (subject to change)
 #define PG_OSD_FONT_CONFIG 2047

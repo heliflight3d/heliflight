@@ -2165,7 +2165,7 @@ static void cliServo(const char *cmdName, char *cmdline)
         servo->rate = vals[RATE];
         servo->freq = vals[FREQ];
         cliDumpPrintLinef(0, false, format,
-            index,
+            index+1,
             servo->min,
             servo->max,
             servo->mid,
@@ -2247,7 +2247,7 @@ static void cliMixer(const char *cmdName, char *cmdline)
             if (mixerOverride[i] == MIXER_OVERRIDE_OFF)
                 cliPrintLinef("mixer override %s off", mixerInputNames[i]);
             else
-                cliPrintLinef("mixer override %s %s", mixerInputNames[i], mixerOverride[i]);
+                cliPrintLinef("mixer override %s %d", mixerInputNames[i], mixerOverride[i]);
         }
     }
     else if (count == 3 && strcasecmp(args[FUNC], "override") == 0) {
@@ -2336,6 +2336,75 @@ static void cliMixer(const char *cmdName, char *cmdline)
     }
 }
 
+static void printMixScales(dumpFlags_t dumpMask, const mixscale_t *mixScale, const mixscale_t *mixScaleDefault, const char *headingStr)
+{
+    const char *format = "mixscale %s %d";
+    headingStr = cliPrintSectionHeading(dumpMask, false, headingStr);
+
+    for (uint32_t i = 1; i < MIXER_INPUT_COUNT; i++) {
+        bool equalsDefault = false;
+        if (mixScaleDefault) {
+            equalsDefault = !memcmp(&mixScale->scale[i], &mixScaleDefault->scale[i], sizeof(mixScale->scale[i]));
+            cliDefaultPrintLinef(dumpMask, equalsDefault, format,
+                mixerInputNames[i],
+                mixScale->scale[i]
+            );
+        }
+        cliDumpPrintLinef(dumpMask, equalsDefault, format,
+                mixerInputNames[i],
+                mixScale->scale[i]
+            );
+    }
+}
+
+static void cliMixScale(const char *cmdName, char *cmdline)
+{
+    enum {FUNC=0, ARGS_MAX=3};
+    char *args[ARGS_MAX];
+    char *saveptr, *ptr;
+    int count = 0;
+
+    ptr = strtok_r(cmdline, " ", &saveptr);
+    while (ptr && count < ARGS_MAX) {
+        args[count++] = ptr;
+        ptr = strtok_r(NULL, " ", &saveptr);
+    }
+
+    if (count == 0) {
+        printMixScales(DUMP_MASTER, mixerScales(), NULL, NULL);
+    }
+    else if (count == 1 && strcasecmp(args[FUNC], "reset") == 0) {
+        for (int i=0; i<MIXER_INPUT_COUNT; i++) {
+            mixerScalesMutable()->scale[i] = 1000;
+        }
+        printMixScales(DUMP_MASTER, mixerScales(), NULL, NULL);
+    }
+    else if (count == 2) {
+        enum {INPUT=0, SCALE, ARGS_COUNT};
+        int vals[ARGS_COUNT];
+        for (int i=INPUT; i<ARGS_COUNT; i++)
+            vals[i] = atoi(args[i]);
+        for (unsigned i=0; i<ARRAYLEN(mixerInputNames); i++) {
+            if (strcasecmp(args[INPUT], mixerInputNames[i]) == 0) {
+                vals[INPUT] = i;
+            }
+        }
+        if (vals[INPUT] >= 1 && vals[INPUT] < MIXER_INPUT_COUNT &&
+            vals[SCALE] >= -2000 && vals[SCALE] <= 2000)
+        {
+            mixerScalesMutable()->scale[vals[INPUT]] = vals[SCALE];
+            // Update mixer to perform immediate change before saving
+            mixScales[vals[INPUT]] = vals[SCALE];
+            cliPrintLinef("mixscale %s %d", mixerInputNames[vals[INPUT]], vals[SCALE]);
+            cliPrintLinef("# Be sure to save when you are finished!");
+        } else {
+            cliShowArgumentRangeError(cmdName, NULL, 0, 0);
+        }
+    }
+    else {
+        cliShowInvalidArgumentCountError(cmdName);
+    }
+}
 
 #ifdef USE_SDCARD
 
@@ -5592,6 +5661,8 @@ static void printConfig(const char *cmdName, char *cmdline, bool doDiff)
 #endif
             printMixerRules(dumpMask, mixerRules_CopyArray, mixerRules(0), "mixer\r\nmixer reset");
 
+            printMixScales(dumpMask, &mixerScales_Copy, mixerScales(), "mixscale");
+
 #if defined(USE_BEEPER)
             printBeeper(dumpMask, beeperConfig_Copy.beeper_off_flags, beeperConfig()->beeper_off_flags, "beeper", BEEPER_ALLOWED_MODES, "beeper");
 
@@ -5843,6 +5914,10 @@ const clicmd_t cmdTable[] = {
                     "\tdel <i>\r\n"
                     "\toverride <input|all> <value|off>",
                     cliMixer),
+    CLI_COMMAND_DEF("mixscale", "configure mixer input scaling",
+                    "<mixer input> <scale factor>\r\n"
+                    "\treset",
+                    cliMixScale),    
 #ifdef USE_LED_STRIP_STATUS_MODE
     CLI_COMMAND_DEF("mode_color", "configure mode and special colors", NULL, cliModeColor),
 #endif
