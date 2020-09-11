@@ -101,14 +101,19 @@ typedef struct mixer_s
     int16_t max;               // lower bound of rule range -1000..1000%%
 } mixer_t;
 
-PG_DECLARE_ARRAY(mixer_t, MIXER_RULE_COUNT, mixerRules);
+typedef struct mixscale_s
+{
+    int16_t scale[MIXER_INPUT_COUNT];         // lower bound of rule range -1000..1000%%
+} mixscale_t;
 
+PG_DECLARE_ARRAY(mixer_t, MIXER_RULE_COUNT, mixerRules);
+PG_DECLARE(mixscale_t, mixerScales);
 
 extern FAST_RAM_ZERO_INIT uint8_t mixerActiveServos;
 extern FAST_RAM_ZERO_INIT uint8_t mixerActiveMotors;
 
 extern FAST_RAM_ZERO_INIT int16_t mixerOverride[MIXER_INPUT_COUNT];
-
+extern FAST_RAM_ZERO_INIT int16_t mixScales[MIXER_INPUT_COUNT];
 
 void mixerInit(void);
 void mixerInitProfile(void);
