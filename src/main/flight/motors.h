@@ -38,6 +38,8 @@ extern float motorOutputStop;
 extern float motorOutputRange;
 
 
+uint8_t getMotorCount(void);
+
 bool isRpmSourceActive(void);
 bool areMotorsRunning(void);
 
@@ -55,7 +57,6 @@ void motorUpdate(void);
 void motorResetDisarmed(void);
 void motorSetDisarmed(uint8_t motor, uint32_t value);
 
-
 // HF3D compat:
 #define stopMotors()      motorStop()
-#define getMotorCount()   motorCount
+

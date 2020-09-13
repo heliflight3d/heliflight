@@ -73,6 +73,11 @@ FAST_RAM_ZERO_INIT uint8_t        motorRpmSource[MAX_SUPPORTED_MOTORS];
 FAST_RAM_ZERO_INIT biquadFilter_t motorRpmFilter[MAX_SUPPORTED_MOTORS];
 
 
+uint8_t getMotorCount(void)
+{
+    return motorCount;
+}
+
 bool isRpmSourceActive(void)
 {
     for (int i = 0; i < motorCount; i++)
