@@ -56,7 +56,7 @@
 #include "flight/mixer.h"
 #include "flight/pid.h"
 
-#define DEBUG_GOV_MAIN
+#define DEBUG_GOV_COMPAT
 //#define DEBUG_GOV_TAIL
 //#define DEBUG_GOV_PARTS
 //#define DEBUG_GOV_PIDSUM
@@ -395,11 +395,11 @@ void governorUpdate(void)
             govMain = throttle;
         }
 
-#ifdef DEBUG_GOV_MAIN
-        DEBUG_SET(DEBUG_GOVERNOR, 0, throttle * 1000);
-        DEBUG_SET(DEBUG_GOVERNOR, 1, govSetpointLimited);
-        DEBUG_SET(DEBUG_GOVERNOR, 2, govMain * 1000);
-        DEBUG_SET(DEBUG_GOVERNOR, 3, headSpeed);
+#ifdef DEBUG_GOV_COMPAT
+        DEBUG_SET(DEBUG_GOVERNOR, 0, govSetpointLimited);
+        DEBUG_SET(DEBUG_GOVERNOR, 1, headSpeed);
+        DEBUG_SET(DEBUG_GOVERNOR, 2, govPidSum * 1000);
+        DEBUG_SET(DEBUG_GOVERNOR, 3, getMotorRPM(1));
 #endif
     } // end of Main Motor handling
 
