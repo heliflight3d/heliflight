@@ -196,43 +196,39 @@ void governorUpdate(void)
         //  This will prevent the "lag" that sometimes occurs where we end up ramping PWM into oblivion and then the ESC "catches up" later on.
         //  See 4/9/20 log #7
 
-        // Determine spoolup status, governor is enabled
-        if (govSetpoint > 0.0) {
-            if (govSpooledUp) {
-                // Drop govSpooledUp status after 3s if headspeed drops < 1000
-                if (headSpeed < 1000 && cmp32(millis(),lastSpoolEndTime) > 3000) {
-                    // Require heli to spin up slowly if it's been more than 3 seconds since we last had a headspeed above 1000 rpm
-                    govSpooledUp = false;
-                }
-            }
-            // Not spooled up
-            else {
-                // Headspeed is within 3% of govSetpoint
-                if (headSpeed > govSetpoint * 0.97) {
-                    // consider the heli to be spooled up
-                    govSpooledUp = true;
-                    // Set the governor's base throttle % to our last spooled throttle value
-                    govBaseThrottle = lastSpoolThrottle;
-                    // Jump the rate limited Setpoint up to the setpoint.
-                    govSetpointLimited = govSetpoint * 0.97;
-                }
-                // Over 95% throttle
-                else if (lastSpoolThrottle > 0.95) {
-                    // HF3D TODO:  Flag and alert user in the logs and/or with beep tones after flight that govMaxHeadspeed is set too high.
-                    // consider the heli to be spooled up
-                    govSpooledUp = true;
-                    // Set the governor's base throttle % to our last spooled throttle value
-                    govBaseThrottle = lastSpoolThrottle;
-                    // Jump the current headspeed
-                    govSetpointLimited = headSpeed;
-                }
-            }
-        }
-        else {
-            // Governor disabled - not spooled up
+        // Determine spoolup status
+        if (headSpeed < 1000 && cmp32(millis(),lastSpoolEndTime) > 3000) {
+            // Require heli to spin up slowly if it's been more than 3 seconds since we last had a headspeed above 1000 rpm
             govSpooledUp = false;
-        }
 
+        } else if (govSetpoint == 0 && throttle < lastSpoolThrottle) {
+            // Governor is disabled, running on throttle % only.
+            // If user spools up above 1000rpm, then lowers throttle below the last spool target, allow the heli to be considered spooled up
+            govSpooledUp = true;
+            lastSpoolThrottle = throttle;        // Allow spool target to reduce with throttle freely even if already spooledUp.
+            // HF3D TODO:  There's a bug with this block....
+            //   If you spool up above 1000rpm and then come back below that throttle setting (normal mode)
+            //   lastSpoolThrottle will ONLY go down since that's all it's allowed to do here.
+            //   Then when the governor turns on it gets this really low lastSpoolThrottle value (maybe even zero)
+            //      and then throttle drops to zero and the i-term has to wind up the entire amount.
+
+        } else if (!govSpooledUp && govSetpoint > 0 && headSpeed > govSetpoint * 0.97f) {
+            // consider the heli to be spooled up
+            govSpooledUp = true;
+            // Set the governor's base throttle % to our last spooled throttle value
+            govBaseThrottle = lastSpoolThrottle;
+            // Jump the rate limited Setpoint up to the setpoint.
+            govSetpointLimited = govSetpoint * 0.97f;
+
+        } else if (!govSpooledUp && govSetpoint > 0 && lastSpoolThrottle > 0.90f) {
+            // Governor is enabled, and we've hit 90% throttle trying to get within 97% the requested headspeed.
+            // HF3D TODO:  Flag and alert user in the logs and/or with beep tones after flight that govMaxHeadspeed is set too high.
+            govSpooledUp = true;
+            // Set the governor's base throttle % to our last spooled throttle value
+            govBaseThrottle = lastSpoolThrottle;
+            // Jump to the current headspeed
+            govSetpointLimited = headSpeed;
+        }
 
         // Handle ramping of throttle
 
