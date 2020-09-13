@@ -167,6 +167,8 @@ void governorUpdate(void)
             } else if ((govSetpointLimited - govSetpoint) > setPointRampRate)  {
                 // Setpoint is lower than the rate limited setpoint, so decrement limited setpoint lower
                 govSetpointLimited = constrainf(govSetpointLimited - setPointRampRate, govSetpoint, govSetpointLimited);
+            } else {
+                govSetpointLimited = govSetpoint;
             }
         }
         else {
