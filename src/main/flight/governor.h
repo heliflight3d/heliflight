@@ -21,6 +21,20 @@
 
 #include "pg/pg.h"
 
+typedef enum {
+    GS_THROTTLE_OFF,
+    GS_PASSTHROUGH_SPOOLING_UP,
+    GS_PASSTHROUGH_ACTIVE,
+    GS_PASSTHROUGH_LOST_THROTTLE,
+    GS_PASSTHROUGH_LOST_HEADSPEED,
+    GS_GOVERNOR_SPOOLING_UP,
+    GS_GOVERNOR_ACTIVE,
+    GS_GOVERNOR_LOST_THROTTLE,
+    GS_GOVERNOR_LOST_HEADSPEED,
+    GS_AUTOROTATION_CLASSIC,
+    GS_AUTOROTATION_ASSIST,
+    GS_AUTOROTATION_BAILOUT
+} govStates_e;
 
 typedef struct governorConfig_s {
     uint16_t gov_max_headspeed;
@@ -36,8 +50,8 @@ typedef struct governorConfig_s {
 
 PG_DECLARE(governorConfig_t, governorConfig);
 
-
 extern FAST_RAM_ZERO_INIT float govOutput[MAX_SUPPORTED_MOTORS];
+extern FAST_RAM_ZERO_INIT uint8_t govState;
 
 void governorInit();
 void governorUpdate();
