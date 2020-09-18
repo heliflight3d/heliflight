@@ -22,8 +22,8 @@
 
 #include "common/utils.h"
 
-#define FC_FIRMWARE_NAME            "Heliflight"
-#define FC_FIRMWARE_IDENTIFIER      "HLFL"
+#define FC_FIRMWARE_NAME            "HeliFlight3D"
+#define FC_FIRMWARE_IDENTIFIER      "HF3D"
 
 #define FC_VERSION_MAJOR            4  // increment when a major release is made (big new feature, etc)
 #define FC_VERSION_MINOR            2  // increment when a minor release is made (small new feature, change etc)
