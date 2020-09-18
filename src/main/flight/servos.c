@@ -80,6 +80,7 @@ void pgResetFn_servoParams(servoParam_t *instance)
                      .mid  = DEFAULT_SERVO_CENTER,
                      .rate = 1000,
                      .freq = 0,
+                     .trim = 0,
         );
     }
 }
@@ -100,7 +101,8 @@ void servoUpdate(void)
 {
     for (int i = 0; i < MAX_SUPPORTED_SERVOS; i++) {
         // Convert mixer output -1..1 to PWM 1000..2000
-        float pwm = servoParams(i)->mid + (mixerGetServoOutput(i) * servoParams(i)->rate / 2);
+        int rateSign = (servoParams(i)->rate >= 0) ? 1 : -1;
+        float pwm = servoParams(i)->mid + (rateSign * servoParams(i)->trim) + (mixerGetServoOutput(i) * servoParams(i)->rate / 2);
 
         if (servoParams(i)->freq > 0)
             pwm = biquadFilterApply(&servoFilter[i], pwm);
