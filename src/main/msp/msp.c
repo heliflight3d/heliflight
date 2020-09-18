@@ -1817,6 +1817,22 @@ static bool mspProcessOutCommand(int16_t cmdMSP, sbuf_t *dst)
         break;
 #endif
 
+    case MSP_GOVERNOR:
+        sbufWriteU16(dst, governorConfig()->gov_max_headspeed);
+        sbufWriteU16(dst, governorConfig()->gov_spoolup_time);
+        sbufWriteU16(dst, governorConfig()->gov_gear_ratio);
+        sbufWriteU16(dst, governorConfig()->gov_p_gain);
+        sbufWriteU16(dst, governorConfig()->gov_i_gain);
+        sbufWriteU16(dst, governorConfig()->gov_cyclic_ff_gain);
+        sbufWriteU16(dst, governorConfig()->gov_collective_ff_gain);
+        sbufWriteU16(dst, governorConfig()->gov_collective_ff_impulse_gain);
+#ifdef USE_HF3D_ASSISTED_TAIL
+        sbufWriteU16(dst, governorConfig()->gov_tailmotor_assist_gain);
+#else
+        sbufWriteU16(dst, 0);
+#endif
+        break;
+
     default:
         unsupportedCommand = true;
     }
@@ -2934,6 +2950,23 @@ static mspResult_e mspProcessInCommand(mspDescriptor_t srcDesc, int16_t cmdMSP, 
 
         break;
 #endif
+
+    case MSP_SET_GOVERNOR:
+        governorConfigMutable()->gov_max_headspeed = sbufReadU16(src);
+        governorConfigMutable()->gov_spoolup_time = sbufReadU16(src);
+        governorConfigMutable()->gov_gear_ratio = sbufReadU16(src);
+        governorConfigMutable()->gov_p_gain = sbufReadU16(src);
+        governorConfigMutable()->gov_i_gain = sbufReadU16(src);
+        governorConfigMutable()->gov_cyclic_ff_gain = sbufReadU16(src);
+        governorConfigMutable()->gov_collective_ff_gain = sbufReadU16(src);
+        governorConfigMutable()->gov_collective_ff_impulse_gain = sbufReadU16(src);
+#ifdef USE_HF3D_ASSISTED_TAIL
+        governorConfigMutable()->gov_tailmotor_assist_gain = sbufReadU16(src);
+#else
+        sbufReadU16(src);
+#endif
+        break;
+
     default:
         // we do not know how to handle the (valid) message, indicate error MSP $M!
         return MSP_RESULT_ERROR;
