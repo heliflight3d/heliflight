@@ -36,6 +36,7 @@ typedef struct servoParam_s {
     int16_t mid;    // servo midpoint
     int16_t rate;   // range [-1000;+1000] ; can be used to adjust a rate 0-2000%% and a direction
     int16_t freq;   // low pass filter freq
+    int16_t trim;   // range [-250;+250] ; can be used to set the center trim of the servo
 } servoParam_t;
 
 PG_DECLARE_ARRAY(servoParam_t, MAX_SUPPORTED_SERVOS, servoParams);
