@@ -1391,6 +1391,7 @@ static bool mspProcessOutCommand(int16_t cmdMSP, sbuf_t *dst)
     case MSP_MIXER_CONFIG:
         sbufWriteU8(dst, MIXER_CUSTOM); // was mixerConfig()->mixerMode
         sbufWriteU8(dst, 0);  // was mixerConfig()->yaw_motors_reversed
+        sbufWriteData(dst, mixerRules(0), sizeof(mixer_t) * MIXER_RULE_COUNT);
         break;
 
     case MSP_RX_CONFIG:
@@ -2664,9 +2665,8 @@ static mspResult_e mspProcessInCommand(mspDescriptor_t srcDesc, int16_t cmdMSP, 
 
     case MSP_SET_MIXER_CONFIG:
         sbufReadU8(src); // was mixerConfigMutable()->mixerMode
-        if (sbufBytesRemaining(src) >= 1) {
-             sbufReadU8(src); // was mixerConfigMutable()->yaw_motors_reversed
-        }
+        sbufReadU8(src); // was mixerConfigMutable()->yaw_motors_reversed
+        sbufReadData(src, mixerRulesMutable(0), sizeof(mixer_t) * MIXER_RULE_COUNT);
         break;
 
     case MSP_SET_RX_CONFIG:
