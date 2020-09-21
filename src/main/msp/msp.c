@@ -1053,14 +1053,15 @@ static bool mspProcessOutCommand(int16_t cmdMSP, sbuf_t *dst)
     case MSP_SERVO:
         sbufWriteData(dst, servo, sizeof(servo));
         break;
+
     case MSP_SERVO_CONFIGURATIONS:
         for (int i = 0; i < MAX_SUPPORTED_SERVOS; i++) {
             sbufWriteU16(dst, servoParams(i)->min);
             sbufWriteU16(dst, servoParams(i)->max);
             sbufWriteU16(dst, servoParams(i)->mid);
-            sbufWriteU8(dst, servoParams(i)->rate / 10);
-            sbufWriteU8(dst, 0);  // servoParams(i)->forwardFromChannel);
-            sbufWriteU32(dst, 0); // servoParams(i)->reversedSources);
+            sbufWriteU16(dst, servoParams(i)->rate);
+            sbufWriteU16(dst, servoParams(i)->freq);
+            sbufWriteU16(dst, servoParams(i)->trim);
         }
         break;
 
@@ -2260,14 +2261,13 @@ static mspResult_e mspProcessInCommand(mspDescriptor_t srcDesc, int16_t cmdMSP, 
         i = sbufReadU8(src);
         if (i >= MAX_SUPPORTED_SERVOS) {
             return MSP_RESULT_ERROR;
-        } else {
-            servoParamsMutable(i)->min = sbufReadU16(src);
-            servoParamsMutable(i)->max = sbufReadU16(src);
-            servoParamsMutable(i)->mid = sbufReadU16(src);
-            servoParamsMutable(i)->rate = sbufReadU8(src)  * 10;
-            sbufReadU8(src);   // servoParamsMutable(i)->forwardFromChannel = sbufReadU8(src);
-            sbufReadU32(src);  // servoParamsMutable(i)->reversedSources = sbufReadU32(src);
         }
+        servoParamsMutable(i)->min = sbufReadU16(src);
+        servoParamsMutable(i)->max = sbufReadU16(src);
+        servoParamsMutable(i)->mid = sbufReadU16(src);
+        servoParamsMutable(i)->rate = sbufReadU16(src);
+        servoParamsMutable(i)->freq = sbufReadU16(src);
+        servoParamsMutable(i)->trim = sbufReadU16(src);
 #else
         return MSP_RESULT_ERROR;
 #endif
