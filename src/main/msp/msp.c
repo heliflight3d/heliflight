@@ -1185,7 +1185,7 @@ static bool mspProcessOutCommand(int16_t cmdMSP, sbuf_t *dst)
     case MSP_ARMING_CONFIG:
         sbufWriteU8(dst, armingConfig()->auto_disarm_delay);
         sbufWriteU8(dst, 0);
-        sbufWriteU8(dst, imuConfig()->small_angle);
+        sbufWriteU8(dst, 0);  // small_angle no longer used
         break;
 
     case MSP_RC_TUNING:
@@ -2025,12 +2025,6 @@ static mspResult_e mspProcessInCommand(mspDescriptor_t srcDesc, int16_t cmdMSP, 
         }
         break;
 
-#if defined(USE_GPS) || defined(USE_MAG)
-    case MSP_SET_HEADING:
-        magHold = sbufReadU16(src);
-        break;
-#endif
-
     case MSP_SET_RAW_RC:
 #ifdef USE_RX_MSP
         {
@@ -2058,7 +2052,7 @@ static mspResult_e mspProcessInCommand(mspDescriptor_t srcDesc, int16_t cmdMSP, 
         armingConfigMutable()->auto_disarm_delay = sbufReadU8(src);
         sbufReadU8(src); // reserved
         if (sbufBytesRemaining(src)) {
-          imuConfigMutable()->small_angle = sbufReadU8(src);
+          sbufReadU8(src);  // small_angle no longer used
         }
         break;
 

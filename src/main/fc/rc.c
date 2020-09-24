@@ -720,24 +720,6 @@ FAST_CODE_NOINLINE void updateRcCommands(void)
 
     rcCommand[THROTTLE] = rcLookupThrottle(tmp);
 
-    if (FLIGHT_MODE(HEADFREE_MODE)) {
-        static t_fp_vector_def  rcCommandBuff;
-
-        rcCommandBuff.X = rcCommand[ROLL];
-        rcCommandBuff.Y = rcCommand[PITCH];
-        if ((!FLIGHT_MODE(ANGLE_MODE) && (!FLIGHT_MODE(HORIZON_MODE)) && (!FLIGHT_MODE(GPS_RESCUE_MODE)))) {
-            rcCommandBuff.Z = rcCommand[YAW];
-        } else {
-            rcCommandBuff.Z = 0;
-        }
-        imuQuaternionHeadfreeTransformVectorEarthToBody(&rcCommandBuff);
-        rcCommand[ROLL] = rcCommandBuff.X;
-        rcCommand[PITCH] = rcCommandBuff.Y;
-        if ((!FLIGHT_MODE(ANGLE_MODE)&&(!FLIGHT_MODE(HORIZON_MODE)) && (!FLIGHT_MODE(GPS_RESCUE_MODE)))) {
-            rcCommand[YAW] = rcCommandBuff.Z;
-        }
-    }
-
     rcCommand[COLLECTIVE] = constrain(rcData[COLLECTIVE] - rxConfig()->midrc, -500, 500);
 
 #ifdef USE_HF3D_RESCUE_MODE
