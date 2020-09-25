@@ -48,7 +48,7 @@
 // permanent IDs must uniquely identify BOX meaning, DO NOT REUSE THEM!
 static const box_t boxes[CHECKBOX_ITEM_COUNT] = {
     { BOXARM, "ARM", 0 },
-    { BOXANGLE, "ANGLE", 1 },
+    { BOXRESCUE, "RESCUE", 1 },
     { BOXHORIZON, "HORIZON", 2 },
 //    { BOXBARO, "BARO", 3 },
 //    { BOXANTIGRAVITY, "ANTI GRAVITY", 4 },
@@ -183,7 +183,7 @@ void initActiveBoxIds(void)
     BME(BOXARM);
     BME(BOXPREARM);
     if (sensors(SENSOR_ACC)) {
-        BME(BOXANGLE);
+        BME(BOXRESCUE);
         BME(BOXHORIZON);
     }
 

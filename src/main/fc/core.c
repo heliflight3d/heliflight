@@ -162,7 +162,7 @@ static bool accNeedsCalibration(void)
         // ACC that would be affected by the lack of calibration.
 
         // Check for any configured modes that use the ACC
-        if (isModeActivationConditionPresent(BOXANGLE) ||
+        if (isModeActivationConditionPresent(BOXRESCUE) ||
             isModeActivationConditionPresent(BOXHORIZON) ||
             isModeActivationConditionPresent(BOXGPSRESCUE) ||
             isModeActivationConditionPresent(BOXCALIB) ||
@@ -623,20 +623,20 @@ bool processRx(timeUs_t currentTimeUs)
 
     bool canUseHorizonMode = true;
 
-    if ((IS_RC_MODE_ACTIVE(BOXANGLE) || failsafeIsActive()) && (sensors(SENSOR_ACC))) {
+    if ((IS_RC_MODE_ACTIVE(BOXRESCUE) || failsafeIsActive()) && (sensors(SENSOR_ACC))) {
         // bumpless transfer to Level mode
         canUseHorizonMode = false;
 
-        if (!FLIGHT_MODE(ANGLE_MODE)) {
-            ENABLE_FLIGHT_MODE(ANGLE_MODE);
+        if (!FLIGHT_MODE(RESCUE_MODE)) {
+            ENABLE_FLIGHT_MODE(RESCUE_MODE);
         }
     } else {
-        DISABLE_FLIGHT_MODE(ANGLE_MODE); // failsafe support
+        DISABLE_FLIGHT_MODE(RESCUE_MODE); // failsafe support
     }
 
     if (IS_RC_MODE_ACTIVE(BOXHORIZON) && canUseHorizonMode) {
 
-        DISABLE_FLIGHT_MODE(ANGLE_MODE);
+        DISABLE_FLIGHT_MODE(RESCUE_MODE);
 
         if (!FLIGHT_MODE(HORIZON_MODE)) {
             ENABLE_FLIGHT_MODE(HORIZON_MODE);
@@ -655,7 +655,7 @@ bool processRx(timeUs_t currentTimeUs)
     }
 #endif
 
-    if (FLIGHT_MODE(ANGLE_MODE) || FLIGHT_MODE(HORIZON_MODE)) {
+    if (FLIGHT_MODE(RESCUE_MODE) || FLIGHT_MODE(HORIZON_MODE)) {
         LED1_ON;
         // increase frequency of attitude task to reduce drift when in angle or horizon mode
         rescheduleTask(TASK_ATTITUDE, TASK_PERIOD_HZ(500));

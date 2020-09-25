@@ -78,7 +78,7 @@ bool isArmingDisabled(void);
 armingDisableFlags_e getArmingDisableFlags(void);
 
 typedef enum {
-    ANGLE_MODE      = (1 << 0),
+    RESCUE_MODE      = (1 << 0),
     HORIZON_MODE    = (1 << 1),
 //    MAG_MODE        = (1 << 2),
 //    BARO_MODE       = (1 << 3),
@@ -101,7 +101,7 @@ extern uint16_t flightModeFlags;
 // macro to initialize map from boxId_e to log2(flightModeFlags). Keep it in sync with flightModeFlags_e enum.
 // [BOXARM] is left unpopulated
 #define BOXID_TO_FLIGHT_MODE_MAP_INITIALIZER {           \
-   [BOXANGLE]       = LOG2(ANGLE_MODE),                  \
+   [BOXRESCUE]      = LOG2(RESCUE_MODE),                 \
    [BOXHORIZON]     = LOG2(HORIZON_MODE),                \
    [BOXPASSTHRU]    = LOG2(PASSTHRU_MODE),               \
    [BOXFAILSAFE]    = LOG2(FAILSAFE_MODE),               \

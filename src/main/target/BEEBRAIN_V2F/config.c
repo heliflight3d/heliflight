@@ -153,7 +153,7 @@ void targetConfiguration(void)
     osdElementConfigMutable()->item_pos[OSD_G_FORCE]            &= ~OSD_PROFILE_1_FLAG;
     osdElementConfigMutable()->item_pos[OSD_FLIP_ARROW]         &= ~OSD_PROFILE_1_FLAG;
 
-    modeActivationConditionsMutable(0)->modeId           = BOXANGLE;
+    modeActivationConditionsMutable(0)->modeId           = BOXRESCUE;
     modeActivationConditionsMutable(0)->auxChannelIndex  = AUX2 - NON_AUX_CHANNEL_COUNT;
     modeActivationConditionsMutable(0)->range.startStep  = CHANNEL_VALUE_TO_STEP(900);
     modeActivationConditionsMutable(0)->range.endStep    = CHANNEL_VALUE_TO_STEP(2100);

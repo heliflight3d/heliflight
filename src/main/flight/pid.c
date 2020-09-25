@@ -724,7 +724,7 @@ STATIC_UNIT_TESTED float calcHorizonLevelStrength(void)
 FAST_CODE_NOINLINE float pidLevel(int axis, const pidProfile_t *pidProfile, const rollAndPitchTrims_t *angleTrim, float currentPidSetpoint)
 {
 #ifdef USE_HF3D_RESCUE_MODE
-     if (FLIGHT_MODE(ANGLE_MODE)) {
+     if (FLIGHT_MODE(RESCUE_MODE)) {
         // Angle mode is now rescue mode.
         float errorAngle = 0.0f;
 
@@ -782,7 +782,7 @@ FAST_CODE_NOINLINE float pidLevel(int axis, const pidProfile_t *pidProfile, cons
         const float errorAngle = angle - ((attitude.raw[axis] - angleTrim->raw[axis]) / 10.0f);
 
         if (FLIGHT_MODE(GPS_RESCUE_MODE)) {
-            // ANGLE mode - control is angle based
+            // Rescue mode - control is angle based
             currentPidSetpoint = errorAngle * levelGain;
         } else {
             // HORIZON mode - mix of ANGLE and ACRO modes
@@ -817,7 +817,7 @@ static FAST_CODE_NOINLINE float applyAcroTrainer(int axis, const rollAndPitchTri
 {
     float ret = setPoint;
 
-    if (!FLIGHT_MODE(ANGLE_MODE) && !FLIGHT_MODE(HORIZON_MODE) && !FLIGHT_MODE(GPS_RESCUE_MODE)) {
+    if (!FLIGHT_MODE(RESCUE_MODE) && !FLIGHT_MODE(HORIZON_MODE) && !FLIGHT_MODE(GPS_RESCUE_MODE)) {
         bool resetIterm = false;
         float projectedAngle = 0;
         const int setpointSign = acroTrainerSign(setPoint);
@@ -1164,7 +1164,7 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
 #if defined(USE_ACC)
     const bool gpsRescueIsActive = FLIGHT_MODE(GPS_RESCUE_MODE);
     levelMode_e levelMode;
-    if (FLIGHT_MODE(ANGLE_MODE) || FLIGHT_MODE(HORIZON_MODE) || gpsRescueIsActive) {
+    if (FLIGHT_MODE(RESCUE_MODE) || FLIGHT_MODE(HORIZON_MODE) || gpsRescueIsActive) {
         levelMode = LEVEL_MODE_RP;
     } else {
         levelMode = LEVEL_MODE_OFF;

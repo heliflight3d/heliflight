@@ -725,7 +725,7 @@ FAST_CODE_NOINLINE void updateRcCommands(void)
 #ifdef USE_HF3D_RESCUE_MODE
     // HF3D:  Rescue (angle) mode overrides user's collective pitch rcCommand
     // Check if rescue (angle) mode is active
-    if (FLIGHT_MODE(ANGLE_MODE)) {    // || FLIGHT_MODE(GPS_RESCUE_MODE)
+    if (FLIGHT_MODE(RESCUE_MODE)) {    // || FLIGHT_MODE(GPS_RESCUE_MODE)
         // attitude.values.roll/pitch = 0 when level, 1800 when fully inverted (decidegrees)
         // Pitch is +90 / -90 at straight down and straight up.  Invert the absolute value of that so 0 = straight up/down
         const float pitchCurrentInclination = 90.0f - (ABS(attitude.values.pitch) / 10.0f);

@@ -151,7 +151,7 @@ typedef struct box_e {
 // FIXME remove ;'s
 static const box_t boxes[CHECKBOX_ITEM_COUNT + 1] = {
     { BOXARM, "ARM;", 0 },
-    { BOXANGLE, "ANGLE;", 1 },
+    { BOXRESCUE, "RESCUE;", 1 },
     { BOXHORIZON, "HORIZON;", 2 },
     //{ BOXVARIO, "VARIO;", 4 },
     { BOXPASSTHRU, "PASSTHRU;", 12 },
@@ -285,7 +285,7 @@ static bool bstSlaveProcessFeedbackCommand(uint8_t bstRequest)
             // Requires new Multiwii protocol version to fix
             // It would be preferable to setting the enabled bits based on BOXINDEX.
             junk = 0;
-            tmp = IS_ENABLED(FLIGHT_MODE(ANGLE_MODE)) << BOXANGLE |
+            tmp = IS_ENABLED(FLIGHT_MODE(RESCUE_MODE)) << BOXRESCUE |
                     IS_ENABLED(FLIGHT_MODE(HORIZON_MODE)) << BOXHORIZON |
                     IS_ENABLED(FLIGHT_MODE(PASSTHRU_MODE)) << BOXPASSTHRU |
                     IS_ENABLED(IS_RC_MODE_ACTIVE(BOXBEEPERON)) << BOXBEEPERON |
@@ -837,7 +837,7 @@ bool writeFCModeToBST(void)
 {
     uint8_t tmp = 0;
     tmp = IS_ENABLED(ARMING_FLAG(ARMED)) |
-           IS_ENABLED(FLIGHT_MODE(ANGLE_MODE)) << 1 |
+           IS_ENABLED(FLIGHT_MODE(RESCUE_MODE)) << 1 |
            IS_ENABLED(FLIGHT_MODE(HORIZON_MODE)) << 2 |
            IS_ENABLED(FLIGHT_MODE(FAILSAFE_MODE)) << 7;
 

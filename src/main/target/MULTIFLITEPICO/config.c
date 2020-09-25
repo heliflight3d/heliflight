@@ -65,7 +65,7 @@ void targetConfiguration(void)
     rcControlsConfigMutable()->yaw_deadband = 2;
     rcControlsConfigMutable()->deadband = 2;
 
-    modeActivationConditionsMutable(0)->modeId          = BOXANGLE;
+    modeActivationConditionsMutable(0)->modeId          = BOXRESCUE;
     modeActivationConditionsMutable(0)->auxChannelIndex = AUX1 - NON_AUX_CHANNEL_COUNT;
     modeActivationConditionsMutable(0)->range.startStep = CHANNEL_VALUE_TO_STEP(900);
     modeActivationConditionsMutable(0)->range.endStep   = CHANNEL_VALUE_TO_STEP(1400);
