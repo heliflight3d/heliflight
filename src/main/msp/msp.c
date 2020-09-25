@@ -1768,7 +1768,37 @@ static bool mspProcessOutCommand(int16_t cmdMSP, sbuf_t *dst)
         sbufWriteU8(dst, 0); // was currentPidProfile->idle_min_rpm
 
         break;
-        
+    case MSP_HELI_CONFIG:
+        sbufWriteU16(dst, currentPidProfile->yawBaseThrust);
+        sbufWriteU16(dst, currentPidProfile->yawColKf);
+        sbufWriteU16(dst, currentPidProfile->yawColPulseKf);
+        sbufWriteU16(dst, currentPidProfile->yawCycKf);
+        sbufWriteU16(dst, currentPidProfile->collective_ff_impulse_freq);
+#ifdef USE_HF3D_RESCUE_MODE
+        sbufWriteU16(dst, currentPidProfile->rescue_collective);
+#else
+        sbufWriteU16(dst, 0);
+#endif
+#ifdef USE_HF3D_ELEVATOR_FILTER
+        sbufWriteU16(dst, currentPidProfile->elevator_filter_gain);
+        sbufWriteU8(dst, currentPidProfile->elevator_filter_window_time);
+        sbufWriteU8(dst, currentPidProfile->elevator_filter_window_size);
+        sbufWriteU8(dst, currentPidProfile->elevator_filter_hz);
+#else
+        sbufWriteU16(dst, 0);
+        sbufWriteU8(dst, 0);
+        sbufWriteU8(dst, 0);
+        sbufWriteU8(dst, 0);
+#endif
+#ifdef USE_HF3D_ERROR_DECAY
+        sbufWriteU8(dst, currentPidProfile->error_decay_always);
+        sbufWriteU8(dst, currentPidProfile->error_decay_rate);
+#else
+        sbufWriteU8(dst, 0);
+        sbufWriteU8(dst, 0);
+#endif
+
+        break;
     case MSP_SENSOR_CONFIG:
 #if defined(USE_ACC)
         sbufWriteU8(dst, accelerometerConfig()->acc_hardware);
@@ -2530,6 +2560,36 @@ static mspResult_e mspProcessInCommand(mspDescriptor_t srcDesc, int16_t cmdMSP, 
         }
         pidInitConfig(currentPidProfile);
 
+        break;
+    case MSP_SET_HELI_CONFIG:
+        currentPidProfile->yawBaseThrust = sbufReadU16(src);
+        currentPidProfile->yawColKf = sbufReadU16(src);
+        currentPidProfile->yawColPulseKf = sbufReadU16(src);
+        currentPidProfile->yawCycKf = sbufReadU16(src);
+        currentPidProfile->collective_ff_impulse_freq = sbufReadU16(src);
+#ifdef USE_HF3D_RESCUE_MODE
+        currentPidProfile->rescue_collective = sbufReadU16(src);
+#else
+        sbufReadU16(src);
+#endif
+#ifdef USE_HF3D_ELEVATOR_FILTER
+        currentPidProfile->elevator_filter_gain = sbufReadU16(src);
+        currentPidProfile->elevator_filter_window_time = sbufReadU8(src);
+        currentPidProfile->elevator_filter_window_size = sbufReadU8(src);
+        currentPidProfile->elevator_filter_hz = sbufReadU8(src);
+#else
+        sbufReadU16(src);
+        sbufReadU8(src);
+        sbufReadU8(src);
+        sbufReadU8(src);
+#endif
+#ifdef USE_HF3D_ERROR_DECAY
+        currentPidProfile->error_decay_always = sbufReadU8(src);
+        currentPidProfile->error_decay_rate = sbufReadU8(src);
+#else
+        sbufReadU8(src);
+        sbufReadU8(src);
+#endif
         break;
     case MSP_SET_SENSOR_CONFIG:
 #if defined(USE_ACC)

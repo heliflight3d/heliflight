@@ -344,4 +344,5 @@
 
 #define MSP_GOVERNOR             140    //out message         Gets the governor configuration
 #define MSP_SET_GOVERNOR         141    //in message          Sets the governor configuration
-
+#define MSP_HELI_CONFIG          142    //out message         Gets helicopter configuration
+#define MSP_SET_HELI_CONFIG      143    //in message          Sets helicopter configuration
