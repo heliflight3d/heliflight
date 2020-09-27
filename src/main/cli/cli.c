@@ -2207,7 +2207,9 @@ static void cliServo(const char *cmdName, char *cmdline)
                 return;
             }
             servoParamsMutable(index-1)->rate *= -1;
-            cliPrintLinef("# servo %d rate:  %d", index, servoParams(index-1)->rate);
+            servoParamsMutable(index-1)->trim *= -1;
+            cliPrintLinef("# servo %d rate reversed to:  %d", index, servoParams(index-1)->rate);
+            cliPrintLinef("# servo %d trim reversed to:  %d", index, servoParams(index-1)->trim);
         }
         else {
             cliShowInvalidArgumentCountError(cmdName);
