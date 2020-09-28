@@ -53,12 +53,13 @@ PG_REGISTER_ARRAY(mixer_t, MIXER_RULE_COUNT, mixerRules, PG_HELI_MIXER, 0);
 FAST_RAM_ZERO_INIT uint8_t mixerActiveServos;
 FAST_RAM_ZERO_INIT uint8_t mixerActiveMotors;
 
-FAST_RAM_ZERO_INIT uint8_t mixerRuleCount;
-
 FAST_RAM_ZERO_INIT mixer_t mixer[MIXER_RULE_COUNT];
+
 FAST_RAM_ZERO_INIT int16_t mixScales[MIXER_INPUT_COUNT];
 
 FAST_RAM_ZERO_INIT float mixerInput[MIXER_INPUT_COUNT];
+FAST_RAM_ZERO_INIT bool  mixerInputSaturated[MIXER_INPUT_COUNT];
+
 FAST_RAM_ZERO_INIT float mixerOutput[MIXER_OUTPUT_COUNT];
 
 FAST_RAM_ZERO_INIT int16_t mixerOverride[MIXER_INPUT_COUNT];
@@ -79,17 +80,13 @@ void mixerInit(void)
 {
     mixerActiveServos = 0;
     mixerActiveMotors = 0;
-    mixerRuleCount = 0;
 
     cyclicLimit = 1.0;
 
     for (int i = 0; i < MIXER_RULE_COUNT; i++) {
         const mixer_t *rule = mixerRules(i);
 
-        if (rule->oper == MIXER_OP_NUL)
-            break;
-
-        mixer[i].oper    = constrain(rule->oper, 1, MIXER_OP_COUNT - 1);
+        mixer[i].oper    = constrain(rule->oper, 0, MIXER_OP_COUNT - 1);
         mixer[i].input   = constrain(rule->input, 0, MIXER_INPUT_COUNT -1);
         mixer[i].output  = constrain(rule->output, 0, MIXER_OUTPUT_COUNT - 1);
         mixer[i].offset  = constrain(rule->offset, -2000, 2000);
@@ -97,12 +94,12 @@ void mixerInit(void)
         mixer[i].min     = constrain(rule->min, -2000, 2000);
         mixer[i].max     = constrain(rule->max, mixer[i].min, 2000);
 
-        if (mixer[i].output < MIXER_OUTPUT_MOTORS)
-            mixerActiveServos = MAX(mixerActiveServos, mixer[i].output + 1);
-        else
-            mixerActiveMotors = MAX(mixerActiveMotors, mixer[i].output - MIXER_OUTPUT_MOTORS + 1);
-
-        mixerRuleCount++;
+        if (mixer[i].oper) {
+            if (mixer[i].output < MIXER_OUTPUT_MOTORS)
+                mixerActiveServos = MAX(mixerActiveServos, mixer[i].output + 1);
+            else
+                mixerActiveMotors = MAX(mixerActiveMotors, mixer[i].output - MIXER_OUTPUT_MOTORS + 1);
+        }
     }
 
     for (int i = 1; i < MIXER_INPUT_COUNT; i++) {
@@ -170,24 +167,61 @@ void mixerUpdate(void)
     for (int i = 0; i < MIXER_OUTPUT_COUNT; i++) {
         mixerOutput[i] = 0;
     }
+    for (int i = 0; i < MIXER_INPUT_COUNT; i++) {
+        mixerInputSaturated[i] = false;
+    }
 
     // Calculate mixer outputs
-    for (int i = 0; i < mixerRuleCount; i++) {
+    for (int i = 0; i < MIXER_RULE_COUNT; i++) {
         int src = mixer[i].input;
         int dst = mixer[i].output;
-        float val = constrainf(mixer[i].offset + mixerInput[src] * mixer[i].rate * mixScales[src]/1000.0f, mixer[i].min, mixer[i].max) / 1000.0f;
+
+        float mix = mixer[i].offset + mixerInput[src] * mixer[i].rate * mixScales[src] / 1000.0f;
+
+        if (mix > mixer[i].max) {
+            mix = mixer[i].max;
+            mixerInputSaturated[src] = true;
+        }
+        else if (mix < mixer[i].min) {
+            mix = mixer[i].min;
+            mixerInputSaturated[src] = true;
+        }
+
+        mix /= 1000.0f;
 
         switch (mixer[i].oper)
         {
             case MIXER_OP_SET:
-                mixerOutput[dst] = val;
+                mixerOutput[dst] = mix;
                 break;
             case MIXER_OP_ADD:
-                mixerOutput[dst] += val;
+                mixerOutput[dst] += mix;
                 break;
             case MIXER_OP_MUL:
-                mixerOutput[dst] *= val;
+                mixerOutput[dst] *= mix;
                 break;
+        }
+    }
+}
+
+void mixerSetOutputSaturated(uint8_t out)
+{
+    for (int i = MIXER_RULE_COUNT; i>0; i--) {
+        int src = mixer[i-1].input;
+        int dst = mixer[i-1].output;
+        if (dst == out) {
+            switch (mixer[i].oper)
+            {
+            case MIXER_OP_SET:
+                mixerInputSaturated[src] = true;
+                return;
+              case MIXER_OP_ADD:
+                mixerInputSaturated[src] = true;
+                break;
+              case MIXER_OP_MUL:
+                mixerInputSaturated[src] = true;
+                break;
+            }
         }
     }
 }

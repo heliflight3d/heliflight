@@ -206,7 +206,17 @@ void motorUpdate(void)
         for (int i = 0; i < motorCount; i++) {
             // Convert mixer motor output 0..1 to motor output
             float out = mixerGetMotorOutput(i) * motorOutputRange + motorOutputLow;
-            motor[i] = constrainf(out, motorOutputLow, motorOutputHigh);
+            if (out > motorOutputHigh) {
+                motor[i] = motorOutputHigh;
+                mixerSetMotorOutputSaturated(i);
+            }
+            else if (out < motorOutputLow) {
+                motor[i] = motorOutputLow;
+                mixerSetMotorOutputSaturated(i);
+            }
+            else {
+                motor[i] = out;
+            }
         }
         motorWriteAll(motor);
     }

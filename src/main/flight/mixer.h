@@ -115,19 +115,27 @@ extern FAST_RAM_ZERO_INIT uint8_t mixerActiveMotors;
 extern FAST_RAM_ZERO_INIT int16_t mixerOverride[MIXER_INPUT_COUNT];
 extern FAST_RAM_ZERO_INIT int16_t mixScales[MIXER_INPUT_COUNT];
 
+extern FAST_RAM_ZERO_INIT bool    mixerInputSaturated[MIXER_INPUT_COUNT];
+
 void mixerInit(void);
 void mixerInitProfile(void);
 
 void mixerUpdate(void);
 
+void mixerSetOutputSaturated(uint8_t out);
+
 float mixerGetInput(uint8_t i);
 float mixerGetServoOutput(uint8_t i);
 float mixerGetMotorOutput(uint8_t i);
-
 float getCyclicDeflection(void);
 
-#define mixerGetThrottle()      mixerGetInput(MIXER_IN_STABILIZED_THROTTLE)
+static inline uint8_t mixerGetActiveServos(void) { return mixerActiveServos; }
+static inline uint8_t mixerGetActiveMotors(void) { return mixerActiveMotors; }
 
-#define mixerGetActiveServos()  (mixerActiveServos)
-#define mixerGetActiveMotors()  (mixerActiveMotors)
+static inline bool  mixerSaturated(uint8_t i) { return mixerInputSaturated[i]; }
+
+static inline void  mixerSetServoOutputSaturated(uint8_t i) { mixerSetOutputSaturated(i); }
+static inline void  mixerSetMotorOutputSaturated(uint8_t i) { mixerSetOutputSaturated(i + MIXER_OUTPUT_MOTORS); }
+
+static inline float mixerGetThrottle() { return mixerGetInput(MIXER_IN_STABILIZED_THROTTLE); }
 

@@ -1074,9 +1074,15 @@ STATIC_UNIT_TESTED void applyAbsoluteControl(const int axis, const float gyroRat
         if (isHeliSpooledUp()) {
             // Integrate the angle rate error, which gives us the accumulated angle error for this axis
             //  Limit the total angle error to the range defined by pidProfile->abs_control_error_limit
-            if (axis == FD_ROLL || axis == FD_PITCH) {
+            // Don't accumulate error if we hit our pidsumLimit on the previous loop through.
+            if (axis == FD_ROLL) {
+                if (fabsf(pidData[FD_ROLL].Sum) >= pidProfile->pidSumLimit || mixerSaturated(MIXER_IN_STABILIZED_ROLL)) {
+                    acErrorRate = 0;
+                }
+            }
+            else if (axis == FD_PITCH) {
                 // Don't accumulate error if we hit our pidsumLimit on the previous loop through.
-                if (fabsf(pidData[axis].Sum) >= pidProfile->pidSumLimit) {
+                if (fabsf(pidData[FD_PITCH].Sum) >= pidProfile->pidSumLimit || mixerSaturated(MIXER_IN_STABILIZED_PITCH)) {
                     acErrorRate = 0;
                 }
             }
@@ -1313,16 +1319,25 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
 
         // -----calculate I component
         float Ki = pidCoefficient[axis].Ki;
-        if (axis == FD_ROLL || axis == FD_PITCH) {
-            // Don't accumulate error if we hit our pidsumLimit on the previous loop through.
-            if (fabsf(pidData[axis].Sum) >= pidProfile->pidSumLimit) {
-                Ki = 0;
-            }
-        } else { // FD_YAW
-            if (pidData[axis].Sum >= pidSumHighLimitYaw || pidData[axis].Sum <= -pidProfile->pidSumLimitYaw) {
+
+        // Don't accumulate error if we hit our pidsumLimit on the previous loop through.
+        if (axis == FD_ROLL) {
+            if (fabsf(pidData[axis].Sum) >= pidProfile->pidSumLimit || mixerSaturated(MIXER_IN_STABILIZED_ROLL)) {
                 Ki = 0;
             }
         }
+        else if (axis == FD_PITCH) {
+            // Don't accumulate error if we hit our pidsumLimit on the previous loop through.
+            if (fabsf(pidData[axis].Sum) >= pidProfile->pidSumLimit || mixerSaturated(MIXER_IN_STABILIZED_PITCH)) {
+                Ki = 0;
+            }
+        }
+        else if (axis == FD_YAW) {
+            if (pidData[axis].Sum >= pidSumHighLimitYaw || pidData[axis].Sum <= -pidProfile->pidSumLimitYaw || mixerSaturated(MIXER_IN_STABILIZED_YAW)) {
+                Ki = 0;
+            }
+        }
+
         pidData[axis].I = constrainf(previousIterm + Ki * dT * itermErrorRate, -itermLimit, itermLimit);
 
 #ifdef USE_HF3D_ERROR_DECAY

@@ -107,10 +107,22 @@ void servoUpdate(void)
         if (servoParams(i)->freq > 0)
             pwm = biquadFilterApply(&servoFilter[i], pwm);
 
-        if (!ARMING_FLAG(ARMED) && servoOverride[i] != SERVO_OVERRIDE_OFF)
+        if (!ARMING_FLAG(ARMED) && servoOverride[i] != SERVO_OVERRIDE_OFF) {
             servo[i] = servoOverride[i];
-        else
-            servo[i] = constrain(pwm, servoParams(i)->min, servoParams(i)->max);
+        }
+        else {
+            if (pwm > servoParams(i)->max) {
+                servo[i] = servoParams(i)->max;
+                mixerSetServoOutputSaturated(i);
+            }
+            else if (pwm < servoParams(i)->min) {
+                servo[i] = servoParams(i)->min;
+                mixerSetServoOutputSaturated(i);
+            }
+            else {
+                servo[i] = pwm;
+            }
+        }
 
         pwmWriteServo(i, servo[i]);
     }
