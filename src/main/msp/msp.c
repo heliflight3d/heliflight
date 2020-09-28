@@ -1278,7 +1278,7 @@ static bool mspProcessOutCommand(int16_t cmdMSP, sbuf_t *dst)
 
         // API 1.42
         sbufWriteU8(dst, getMotorCount());
-        sbufWriteU8(dst, motorConfig()->motorPoleCount[0]); // HF3D: TODO other motors
+        sbufWriteU8(dst, motorConfig()->motorPoleCount[0]);
 #ifdef USE_DSHOT_TELEMETRY
         sbufWriteU8(dst, motorConfig()->dev.useDshotTelemetry);
 #else
@@ -1290,6 +1290,7 @@ static bool mspProcessOutCommand(int16_t cmdMSP, sbuf_t *dst)
 #else
         sbufWriteU8(dst, 0);
 #endif
+        sbufWriteU8(dst, motorConfig()->motorPoleCount[1]);
         break;
 
 #ifdef USE_MAG
@@ -2215,12 +2216,15 @@ static mspResult_e mspProcessInCommand(mspDescriptor_t srcDesc, int16_t cmdMSP, 
 
         // version 1.42
         if (sbufBytesRemaining(src) >= 2) {
-            motorConfigMutable()->motorPoleCount[0] = sbufReadU8(src); // HF3D: TODO other motors
+            motorConfigMutable()->motorPoleCount[0] = sbufReadU8(src);
 #if defined(USE_DSHOT_TELEMETRY)
             motorConfigMutable()->dev.useDshotTelemetry = sbufReadU8(src);
 #else
             sbufReadU8(src);
 #endif
+        }
+        if (sbufBytesRemaining(src) >= 1) {
+            motorConfigMutable()->motorPoleCount[1] = sbufReadU8(src);
         }
         break;
 
