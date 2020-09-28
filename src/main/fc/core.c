@@ -752,7 +752,7 @@ void subTaskTelemetryPollSensors(timeUs_t currentTimeUs)
 }
 #endif
 
-static FAST_CODE void subTaskMixerUpdate(timeUs_t currentTimeUs)
+static FAST_CODE_NOINLINE void subTaskMixerUpdate(timeUs_t currentTimeUs)
 {
     UNUSED(currentTimeUs);
 
