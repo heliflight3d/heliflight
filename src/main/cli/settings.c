@@ -898,6 +898,7 @@ const clivalue_t valueTable[] = {
 
 // PG_PID_CONFIG
     { "pid_process_denom",          VAR_UINT8  | MASTER_VALUE,  .config.minmaxUnsigned = { 1, MAX_PID_PROCESS_DENOM }, PG_PID_CONFIG, offsetof(pidConfig_t, pid_process_denom) },
+    { "collective_reference",          VAR_UINT16  | MASTER_VALUE,  .config.minmaxUnsigned = { 25, 3000 }, PG_PID_CONFIG, offsetof(pidConfig_t, collective_reference) },
 
 // PG_PID_PROFILE
 #ifdef USE_PROFILE_NAMES
@@ -991,7 +992,7 @@ const clivalue_t valueTable[] = {
     { "error_decay_rate",               VAR_UINT8  | PROFILE_VALUE, .config.minmaxUnsigned = { 0, 45 },PG_PID_PROFILE, offsetof(pidProfile_t, error_decay_rate) },
 #endif
 #ifdef USE_HF3D_RESCUE_MODE
-    { "rescue_collective",              VAR_UINT16 | PROFILE_VALUE, .config.minmaxUnsigned = { 50, 500 },PG_PID_PROFILE, offsetof(pidProfile_t, rescue_collective) },
+    { "rescue_collective",              VAR_UINT8 | PROFILE_VALUE, .config.minmaxUnsigned = { 25, 255 },PG_PID_PROFILE, offsetof(pidProfile_t, rescue_collective) },
 #endif
 #ifdef USE_HF3D_ELEVATOR_FILTER
     { "elevator_filter_gain",           VAR_UINT16 | PROFILE_VALUE, .config.minmaxUnsigned = { 0, 1000 }, PG_PID_PROFILE, offsetof(pidProfile_t, elevator_filter_gain) },

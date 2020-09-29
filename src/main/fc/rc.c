@@ -721,45 +721,6 @@ FAST_CODE_NOINLINE void updateRcCommands(void)
     rcCommand[THROTTLE] = rcLookupThrottle(tmp);
 
     rcCommand[COLLECTIVE] = constrain(rcData[COLLECTIVE] - rxConfig()->midrc, -500, 500);
-
-#ifdef USE_HF3D_RESCUE_MODE
-    // HF3D:  Rescue (angle) mode overrides user's collective pitch rcCommand
-    // Check if rescue (angle) mode is active
-    if (FLIGHT_MODE(RESCUE_MODE)) {    // || FLIGHT_MODE(GPS_RESCUE_MODE)
-        // attitude.values.roll/pitch = 0 when level, 1800 when fully inverted (decidegrees)
-        // Pitch is +90 / -90 at straight down and straight up.  Invert the absolute value of that so 0 = straight up/down
-        const float pitchCurrentInclination = 90.0f - (ABS(attitude.values.pitch) / 10.0f);
-        // Roll is +90/-90 when sideways, and +180/-180 when inverted
-        float rollCurrentInclination = 0.0f;
-        if (ABS(attitude.values.roll) > 900.0f) {
-            rollCurrentInclination = 90.0f - (180.0f - (ABS(attitude.values.roll) / 10.0f));
-        } else {
-            rollCurrentInclination = 90.0f - (ABS(attitude.values.roll) / 10.0f);
-        }
-        const float vertCurrentInclination = MIN(pitchCurrentInclination, rollCurrentInclination);
-
-        // adjust collective pitch so heli has no collective while past vertical, and pitch is added as it approaches level
-        // vertCurrentInclination between 0 (vertical) and 90 (level)  -- inverted from normal attitude values
-        // Hover pitch on my M2 test rig is around +100, full pitch pumps are around +240
-        // Desired collective at various rescue pitches:
-        //   90deg = 0 collective, 60deg=25col, 45deg=60col, 30deg=110col, 10deg=190col, 0deg=240col
-        //   ... output of this equation is 240, so normalize it and then multiply by rescue_collective setting.
-        // HF3D TODO:  Add rescue collective agression parameter to reduce tail blowout from large collective swings
-        //   Or just rate limit the collective change?  Basically it's the big load and governor change that can overwhelm
-        //   the tail authority of the heli.
-        // HF3D TODO:  acc angleTrim setting isn't taken into account here... but is in pidLevel.
-        //   Same issue up above.  It's minor as long as angleTrim is small, so maybe not worth the calculation overhead?
-        if ( ((attitude.values.roll / 10.0f) > 90.0f) || ((attitude.values.roll / 10.0f) < -90.0f) ) {
-            // We're closer to inverted and pidLevel will be rolling to inverted.
-            // Use negative collective pitch.
-            rcCommand[COLLECTIVE] = pidGetRescueCollectiveSetting() * (-0.02963f * vertCurrentInclination * vertCurrentInclination) / 240.0f;
-        } else {
-            // We're closer to upright and pidLevel will be rolling to upright.
-            // Use positive collective pitch.
-            rcCommand[COLLECTIVE] = pidGetRescueCollectiveSetting() * (0.02963f * vertCurrentInclination * vertCurrentInclination) / 240.0f;
-        }
-    }
-#endif
 }
 
 void resetYawAxis(void)

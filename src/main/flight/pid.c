@@ -100,7 +100,8 @@ PG_REGISTER_WITH_RESET_TEMPLATE(pidConfig_t, pidConfig, PG_PID_CONFIG, 2);
 #endif
 
 PG_RESET_TEMPLATE(pidConfig_t, pidConfig,
-    .pid_process_denom = PID_PROCESS_DENOM_DEFAULT
+    .pid_process_denom = PID_PROCESS_DENOM_DEFAULT,
+    .collective_reference = 1000,
 );
 
 #ifdef USE_ACRO_TRAINER
@@ -172,7 +173,7 @@ void resetPidProfile(pidProfile_t *pidProfile)
         .collective_ff_impulse_freq = 100,
         .error_decay_always = 0,
         .error_decay_rate = 7,
-        .rescue_collective = 200,
+        .rescue_collective = 150,
         .elevator_filter_gain = 50,
         .elevator_filter_window_time = 75,
         .elevator_filter_window_size = 30,
@@ -212,7 +213,7 @@ static FAST_RAM_ZERO_INIT float collectiveDeflectionAbsHPF;
 static FAST_RAM_ZERO_INIT float collectivePulseFilterGain;
 
 #ifdef USE_HF3D_RESCUE_MODE
-static FAST_RAM_ZERO_INIT float rescueCollective;
+static FAST_RAM_ZERO_INIT uint8_t rescueCollective;
 #endif
 
 static FAST_RAM_ZERO_INIT filterApplyFnPtr dtermNotchApplyFn;
@@ -258,6 +259,7 @@ static FAST_RAM_ZERO_INIT pt1Filter_t elevatorFilterLowpass;
 
 static FAST_RAM_ZERO_INIT float pidSumHighLimitYaw;
 
+static FAST_RAM_ZERO_INIT uint16_t collectiveReference;
 
 float pidGetSpikeLimitInverse()
 {
@@ -626,6 +628,8 @@ void pidInitConfig(const pidProfile_t *pidProfile)
     {
         pidSumHighLimitYaw = pidProfile->pidSumLimitYaw;
     }
+    
+    collectiveReference = constrain(pidConfig()->collective_reference, 25, 3000);
 }
 
 void pidInit(const pidProfile_t *pidProfile)
@@ -723,6 +727,7 @@ STATIC_UNIT_TESTED float calcHorizonLevelStrength(void)
 
 FAST_CODE_NOINLINE float pidLevel(int axis, const pidProfile_t *pidProfile, const rollAndPitchTrims_t *angleTrim, float currentPidSetpoint)
 {
+
 #ifdef USE_HF3D_RESCUE_MODE
      if (FLIGHT_MODE(RESCUE_MODE)) {
         // Angle mode is now rescue mode.
@@ -763,6 +768,39 @@ FAST_CODE_NOINLINE float pidLevel(int axis, const pidProfile_t *pidProfile, cons
         //     you will be putting in the wrong pitch correction during the time you're inverted.  Not good, especially
         //     since "roll" gets wonky near straight up/down.
         currentPidSetpoint = errorAngle * levelGain;
+        
+        // HF3D:  Rescue (angle) mode overrides user's collective pitch rcCommand
+        // attitude.values.roll/pitch = 0 when level, 1800 when fully inverted (decidegrees)
+        // Pitch is +90 / -90 at straight down and straight up.  Invert the absolute value of that so 0 = straight up/down
+        const float pitchCurrentInclination = 90.0f - (ABS(attitude.values.pitch) / 10.0f);
+        // Roll is +90/-90 when sideways, and +180/-180 when inverted
+        float rollCurrentInclination = 0.0f;
+        if (ABS(attitude.values.roll) > 900.0f) {
+            rollCurrentInclination = 90.0f - (180.0f - (ABS(attitude.values.roll) / 10.0f));
+        } else {
+            rollCurrentInclination = 90.0f - (ABS(attitude.values.roll) / 10.0f);
+        }
+        const float vertCurrentInclination = MIN(pitchCurrentInclination, rollCurrentInclination);
+
+        // adjust collective pitch so heli has no collective while past vertical, and pitch is added as it approaches level
+        // vertCurrentInclination between 0 (vertical) and 90 (level)  -- inverted from normal attitude values
+        // Desired rescue collective at various vertical inclination angles:
+        //   0deg(knife-edge)=0%, 30deg=11%, 45deg=25%, 60deg=45%, 80deg=79%, 90deg(level)=100%
+        const float collectiveInclinationFactor = vertCurrentInclination * vertCurrentInclination / (90.0*90.0);
+        
+        // HF3D TODO:  Add rescue collective agression parameter to reduce tail blowout from large collective swings
+        //   Or just rate limit the collective change?  Basically it's the big load and governor change that can overwhelm
+        //   the tail authority of the heli.
+        // HF3D TODO:  acc angleTrim setting isn't taken into account here... but is in pidLevel.
+        //   Same issue up above.  It's minor as long as angleTrim is small, so maybe not worth the calculation overhead?
+        if ( ((attitude.values.roll / 10.0f) > 90.0f) || ((attitude.values.roll / 10.0f) < -90.0f) ) {
+            // pidLevel will be rolling to inverted, use negative collective pitch
+            rcCommand[COLLECTIVE] = (rescueCollective/100.0 * 500.0 * collectiveReference / mixScales[MIXER_IN_STABILIZED_COLLECTIVE]) * -collectiveInclinationFactor;
+        } else {
+            // pidLevel will be rolling to upright, use positive collective pitch
+            rcCommand[COLLECTIVE] = (rescueCollective/100.0 * 500.0 * collectiveReference / mixScales[MIXER_IN_STABILIZED_COLLECTIVE]) * collectiveInclinationFactor;
+        }
+        // end of Rescue collective override
      }
      else
 #endif
@@ -1408,8 +1446,8 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
          // HF3D:  Calculate tail feedforward precompensation and add it to the pidSum on the Yaw channel
         if (axis == FD_YAW) {
 
-            // Calculate absolute value of collective stick throw
-            collectiveDeflectionAbs = fabs(rcCommand[COLLECTIVE] / 500.0);
+            // Calculate absolute value of collective stick throw referenced to 8 degrees of pitch = 1.0f
+            collectiveDeflectionAbs = fabs(rcCommand[COLLECTIVE] / 500.0 * mixScales[MIXER_IN_STABILIZED_COLLECTIVE] / collectiveReference);
 
             // Collective pitch impulse feed-forward for the main motor
             // Run collectiveDeflectionAbs through a low pass filter
@@ -1557,10 +1595,3 @@ float getCollectiveDeflectionAbsHPF()
 {
     return collectiveDeflectionAbsHPF;
 }
-
-#ifdef USE_HF3D_RESCUE_MODE
-uint16_t pidGetRescueCollectiveSetting()
-{
-    return rescueCollective;
-}
-#endif
