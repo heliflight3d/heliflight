@@ -208,11 +208,9 @@ void motorUpdate(void)
             float out = mixerGetMotorOutput(i) * motorOutputRange + motorOutputLow;
             if (out > motorOutputHigh) {
                 motor[i] = motorOutputHigh;
-                mixerSetMotorOutputSaturated(i);
             }
             else if (out < motorOutputLow) {
                 motor[i] = motorOutputLow;
-                mixerSetMotorOutputSaturated(i);
             }
             else {
                 motor[i] = out;

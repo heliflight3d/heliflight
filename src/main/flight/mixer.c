@@ -117,6 +117,11 @@ void mixerInitProfile(void)
 
 void mixerUpdate(void)
 {
+    // Reset saturation
+    for (int i = 0; i < MIXER_INPUT_COUNT; i++) {
+        mixerInputSaturated[i] = false;
+    }
+    
     mixerInput[MIXER_IN_RCCMD_ROLL]       = rcCommand[ROLL]       * MIXER_RC_SCALING;
     mixerInput[MIXER_IN_RCCMD_PITCH]      = rcCommand[PITCH]      * MIXER_RC_SCALING;
     mixerInput[MIXER_IN_RCCMD_YAW]        = rcCommand[YAW]        * MIXER_RC_SCALING;
@@ -166,9 +171,6 @@ void mixerUpdate(void)
     // Reset outputs
     for (int i = 0; i < MIXER_OUTPUT_COUNT; i++) {
         mixerOutput[i] = 0;
-    }
-    for (int i = 0; i < MIXER_INPUT_COUNT; i++) {
-        mixerInputSaturated[i] = false;
     }
 
     // Calculate mixer outputs

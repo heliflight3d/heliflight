@@ -257,8 +257,6 @@ static FAST_RAM_ZERO_INIT float ffSpikeLimitInverse;
 static FAST_RAM_ZERO_INIT filterApplyFnPtr elevatorFilterLowpassApplyFn;
 static FAST_RAM_ZERO_INIT pt1Filter_t elevatorFilterLowpass;
 
-static FAST_RAM_ZERO_INIT float pidSumHighLimitYaw;
-
 static FAST_RAM_ZERO_INIT uint16_t collectiveReference;
 
 float pidGetSpikeLimitInverse()
@@ -614,21 +612,6 @@ void pidInitConfig(const pidProfile_t *pidProfile)
     rescueCollective = pidProfile->rescue_collective;
 #endif
 
-#ifdef USE_HF3D_ASSISTED_TAIL
-    // If we're using a tail motor, calculate the maximum ability to assist in the main motor torque direction.
-    //   The idea here is that if we have a large gain, then that means our main motor doesn't have
-    //   much authority to drive the tail, and thus the pid controller probably needs to know that
-    //   we can't help it much. If the assist gain is small, then that means our main motor torque
-    //   probably has a lot of authority over the yaw axis.
-    if (getMotorCount() > 1 && governorConfig()->gov_tailmotor_assist_gain > 0) {
-        float limit = 0.15f * MIXER_PID_SCALING / ((float)governorConfig()->gov_tailmotor_assist_gain / 100.0f);
-        pidSumHighLimitYaw = constrain(limit, 0, currentPidProfile->pidSumLimitYaw);
-    } else
-#endif
-    {
-        pidSumHighLimitYaw = pidProfile->pidSumLimitYaw;
-    }
-    
     collectiveReference = constrain(pidConfig()->collective_reference, 25, 3000);
 }
 
@@ -1076,13 +1059,13 @@ STATIC_UNIT_TESTED void applyAbsoluteControl(const int axis, const float gyroRat
             //  Limit the total angle error to the range defined by pidProfile->abs_control_error_limit
             // Don't accumulate error if we hit our pidsumLimit on the previous loop through.
             if (axis == FD_ROLL) {
-                if (fabsf(pidData[FD_ROLL].Sum) >= pidProfile->pidSumLimit || mixerSaturated(MIXER_IN_STABILIZED_ROLL)) {
+                if (fabsf(pidData[FD_ROLL].Sum) >= pidProfile->pidSumLimit) {
                     acErrorRate = 0;
                 }
             }
             else if (axis == FD_PITCH) {
                 // Don't accumulate error if we hit our pidsumLimit on the previous loop through.
-                if (fabsf(pidData[FD_PITCH].Sum) >= pidProfile->pidSumLimit || mixerSaturated(MIXER_IN_STABILIZED_PITCH)) {
+                if (fabsf(pidData[FD_PITCH].Sum) >= pidProfile->pidSumLimit) {
                     acErrorRate = 0;
                 }
             }
@@ -1322,18 +1305,18 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
 
         // Don't accumulate error if we hit our pidsumLimit on the previous loop through.
         if (axis == FD_ROLL) {
-            if (fabsf(pidData[axis].Sum) >= pidProfile->pidSumLimit || mixerSaturated(MIXER_IN_STABILIZED_ROLL)) {
+            if (fabsf(pidData[axis].Sum) >= pidProfile->pidSumLimit) {
                 Ki = 0;
             }
         }
         else if (axis == FD_PITCH) {
             // Don't accumulate error if we hit our pidsumLimit on the previous loop through.
-            if (fabsf(pidData[axis].Sum) >= pidProfile->pidSumLimit || mixerSaturated(MIXER_IN_STABILIZED_PITCH)) {
+            if (fabsf(pidData[axis].Sum) >= pidProfile->pidSumLimit) {
                 Ki = 0;
             }
         }
         else if (axis == FD_YAW) {
-            if (pidData[axis].Sum >= pidSumHighLimitYaw || pidData[axis].Sum <= -pidProfile->pidSumLimitYaw || mixerSaturated(MIXER_IN_STABILIZED_YAW)) {
+            if (fabsf(pidData[axis].Sum) >= pidProfile->pidSumLimitYaw || mixerSaturated(MIXER_IN_STABILIZED_YAW)) {
                 Ki = 0;
             }
         }

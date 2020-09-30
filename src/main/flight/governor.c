@@ -351,6 +351,9 @@ void governorUpdate(void)
                     //   5x ramp rate was chosen because that's about how fast you need to be able to track the headspeed increase for a fast burst of throttle
                     //   Need to increase govSetpointLimited 1x faster than desired ramp rate because it will be decremented by ramp rate in the governor setpoint change code above
                     govSetpointLimited = constrainf(govSetpointLimited + 6.0f*setPointRampRate, govSetpointLimited, headSpeed);
+                } else if (headSpeed >= govSetpoint*1.15f) {
+                    // Above 15% overspeed the governor will pull throttle as much as the assist is adding it
+                    mixerSetMotorOutputSaturated(1);
                 }
             }
 #endif
@@ -632,6 +635,7 @@ void governorUpdate(void)
             case GS_PASSTHROUGH_LOST_THROTTLE:
             case GS_GOVERNOR_LOST_THROTTLE:
                 govTail = 0.0;
+                mixerSetMotorOutputSaturated(1);
                 break;
             case GS_PASSTHROUGH_SPOOLING_UP:
             case GS_GOVERNOR_SPOOLING_UP:
@@ -670,6 +674,13 @@ void governorUpdate(void)
             // Allow the tail motor to come to a complete stop when throttle is zero.
             govTail = constrainf(govTail, 0.0, 1.0f);
         }
+        
+        // Check for saturation of the tail motor output
+        if (govTail > 0.99) {
+            mixerSetMotorOutputSaturated(1);
+        }
+        // Note... in theory here we should check for (govTail < digitalIdleOffset) saturation when not using gov tailmotor assist, 
+        //   but the flying characteristics will be better if we don't do that check.  
 
 #ifdef DEBUG_GOV_TAIL
         DEBUG_SET(DEBUG_GOVERNOR, 0, throttle * 1000);
