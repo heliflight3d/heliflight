@@ -1417,7 +1417,7 @@ static bool mspProcessOutCommand(int16_t cmdMSP, sbuf_t *dst)
         sbufWriteU8(dst, 0);
 #endif
         sbufWriteU8(dst, 0); // was rxConfig()->fpvCamAngleDegrees
-        sbufWriteU8(dst, rxConfig()->rcInterpolationChannels);
+        sbufWriteU8(dst, 0); // was rxConfig()->rcInterpolationChannels
 #if defined(USE_RC_SMOOTHING_FILTER)
         sbufWriteU8(dst, rxConfig()->rc_smoothing_type);
         sbufWriteU8(dst, rxConfig()->rc_smoothing_input_cutoff);
@@ -1442,6 +1442,8 @@ static bool mspProcessOutCommand(int16_t cmdMSP, sbuf_t *dst)
 #else
         sbufWriteU8(dst, 0);
 #endif
+        sbufWriteU8(dst, rxConfig()->rcInterpolationChannels);
+
         break;
     case MSP_FAILSAFE_CONFIG:
         sbufWriteU8(dst, failsafeConfig()->failsafe_delay);
@@ -2766,7 +2768,7 @@ static mspResult_e mspProcessInCommand(mspDescriptor_t srcDesc, int16_t cmdMSP, 
         }
         if (sbufBytesRemaining(src) >= 6) {
             // Added in MSP API 1.40
-            rxConfigMutable()->rcInterpolationChannels = sbufReadU8(src);
+            sbufReadU8(src); // was rxConfigMutable()->rcInterpolationChannels
 #if defined(USE_RC_SMOOTHING_FILTER)
             configRebootUpdateCheckU8(&rxConfigMutable()->rc_smoothing_type, sbufReadU8(src));
             configRebootUpdateCheckU8(&rxConfigMutable()->rc_smoothing_input_cutoff, sbufReadU8(src));
@@ -2801,6 +2803,9 @@ static mspResult_e mspProcessInCommand(mspDescriptor_t srcDesc, int16_t cmdMSP, 
 #else
             sbufReadU8(src);
 #endif
+        }
+        if (sbufBytesRemaining(src) >= 1) {
+            rxConfigMutable()->rcInterpolationChannels = sbufReadU8(src);
         }
 
         break;

@@ -227,7 +227,6 @@ static const adjustmentConfig_t defaultAdjustmentConfigs[ADJUSTMENT_FUNCTION_COU
 static const char * const adjustmentLabels[] = {
     "RC RATE",
     "RC EXPO",
-    "THROTTLE EXPO",
     "ROLL RATE",
     "YAW RATE",
     "PITCH/ROLL P",
