@@ -527,14 +527,17 @@ tty_flash:
 	$(V0) stm32flash -w $(TARGET_HEX) -v -g 0x0 -b 115200 $(SERIAL_DEVICE)
 
 ## dfu_flash         : flash firmware (.bin) onto flight controller via a DFU mode
-dfu_flash:
+dfu_flash: $(TARGET_DFU)
 ifneq (no-port-found,$(SERIAL_DEVICE))
-	# potentially this is because the MCU already is in DFU mode, try anyway
-	$(V0) echo -n 'R' > $(SERIAL_DEVICE)
-	$(V0) sleep 1
+	$(V0) echo -n 'R' > $(SERIAL_DEVICE) ; sleep 3
 endif
-	$(V0) $(MAKE) $(TARGET_DFU)
 	$(V0) dfu-util -a 0 -D $(TARGET_DFU) -s :leave
+
+dfu_erase_and_flash: $(TARGET_DFU)
+ifneq (no-port-found,$(SERIAL_DEVICE))
+	$(V0) echo -n 'R' > $(SERIAL_DEVICE) ; sleep 3
+endif
+	$(V0) dfu-util -a 0 -D $(TARGET_DFU) -s :mass-erase:force:leave
 
 st-flash_$(TARGET): $(TARGET_BIN)
 	$(V0) st-flash --reset write $< 0x08000000
