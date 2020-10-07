@@ -348,3 +348,5 @@
 #define MSP_SET_HELI_CONFIG      143    //in message          Sets helicopter configuration
 #define MSP_RPM_FILTER           144    //out message         Gets RPM filter configuration
 #define MSP_SET_RPM_FILTER       145    //in message          Sets RPM filter configuration
+#define MSP_SERVO_OVERRIDE       146    //out message         Gets servo output override values
+#define MSP_SET_SERVO_OVERRIDE   147    //in message          Sets servo output override

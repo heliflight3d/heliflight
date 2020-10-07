@@ -1076,6 +1076,12 @@ static bool mspProcessOutCommand(int16_t cmdMSP, sbuf_t *dst)
             sbufWriteU8(dst, 0); // customServoMixers(i)->box);
         }
         break;
+
+    case MSP_SERVO_OVERRIDE:
+        for (int i = 0; i < MAX_SUPPORTED_SERVOS; i++) {
+            sbufWriteU16(dst, servoOverride[i]);
+        }
+        break;
 #endif
 
     case MSP_MOTOR:
@@ -2322,6 +2328,18 @@ static mspResult_e mspProcessInCommand(mspDescriptor_t srcDesc, int16_t cmdMSP, 
             sbufReadU8(src);  // customServoMixersMutable(i)->box = sbufReadU8(src);
             //loadCustomServoMixer();
         }
+#else
+        return MSP_RESULT_ERROR;
+#endif
+        break;
+
+    case MSP_SET_SERVO_OVERRIDE:
+#ifdef USE_SERVOS
+        i = sbufReadU8(src);
+        if (i >= MAX_SUPPORTED_SERVOS) {
+            return MSP_RESULT_ERROR;
+        }
+        servoOverride[i] = sbufReadU16(src);
 #else
         return MSP_RESULT_ERROR;
 #endif
