@@ -172,16 +172,14 @@ void rpmSourceInit(void)
 
 void initEscEndpoints(void)
 {
-    float motorOutputLimit = constrainf(currentPidProfile->motor_output_limit / 100.0f, 0, 1);
-
     if (isMotorProtocolDshot()) {
         motorOutputLow  = DSHOT_MIN_THROTTLE;
-        motorOutputHigh = DSHOT_MIN_THROTTLE + (DSHOT_MAX_THROTTLE - DSHOT_MIN_THROTTLE) * motorOutputLimit;
+        motorOutputHigh = DSHOT_MAX_THROTTLE;
         motorOutputStop = DSHOT_CMD_MOTOR_STOP;
     }
     else {
         motorOutputLow  = motorConfig()->minthrottle;
-        motorOutputHigh = motorConfig()->minthrottle + ((motorConfig()->maxthrottle - motorConfig()->minthrottle) * motorOutputLimit);
+        motorOutputHigh = motorConfig()->maxthrottle;
         motorOutputStop = motorConfig()->mincommand;
     }
 
