@@ -156,7 +156,6 @@ void resetPidProfile(pidProfile_t *pidProfile)
         .dyn_lpf_dterm_min_hz = 70,
         .dyn_lpf_dterm_max_hz = 170,
         .thrustLinearization = 0,
-        .auto_profile_cell_count = AUTO_PROFILE_CELL_COUNT_STAY,
         .profileName = { 0 },
         .ff_interpolate_sp = FF_INTERPOLATE_AVG2,
         .ff_spike_limit = 60,

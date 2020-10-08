@@ -205,10 +205,6 @@ void batteryUpdatePresence(void)
                 cells = MAX_AUTO_DETECT_CELL_COUNT;
             }
             batteryCellCount = cells;
-
-            if (!ARMING_FLAG(ARMED)) {
-                changePidProfileFromCellCount(batteryCellCount);
-            }
         }
         batteryWarningVoltage = batteryCellCount * batteryConfig()->vbatwarningcellvoltage;
         batteryCriticalVoltage = batteryCellCount * batteryConfig()->vbatmincellvoltage;
