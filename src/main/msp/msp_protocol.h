@@ -350,3 +350,5 @@
 #define MSP_SET_RPM_FILTER       145    //in message          Sets RPM filter configuration
 #define MSP_SERVO_OVERRIDE       146    //out message         Gets servo output override values
 #define MSP_SET_SERVO_OVERRIDE   147    //in message          Sets servo output override
+#define MSP_MIXER_OVERRIDE       148    //out message         Gets mixer input override values
+#define MSP_SET_MIXER_OVERRIDE   149    //in message          Sets mixer input override
