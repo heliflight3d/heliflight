@@ -228,6 +228,7 @@ static const blackboxDeltaFieldDefinition_t blackboxMainFields[] = {
     {"debug",       1, SIGNED,   .Ipredict = PREDICT(0),       .Iencode = ENCODING(SIGNED_VB),   .Ppredict = PREDICT(AVERAGE_2),     .Pencode = ENCODING(SIGNED_VB), FLIGHT_LOG_FIELD_CONDITION_DEBUG},
     {"debug",       2, SIGNED,   .Ipredict = PREDICT(0),       .Iencode = ENCODING(SIGNED_VB),   .Ppredict = PREDICT(AVERAGE_2),     .Pencode = ENCODING(SIGNED_VB), FLIGHT_LOG_FIELD_CONDITION_DEBUG},
     {"debug",       3, SIGNED,   .Ipredict = PREDICT(0),       .Iencode = ENCODING(SIGNED_VB),   .Ppredict = PREDICT(AVERAGE_2),     .Pencode = ENCODING(SIGNED_VB), FLIGHT_LOG_FIELD_CONDITION_DEBUG},
+
     /* Motors only rarely drops under minthrottle (when stick falls below mincommand), so predict minthrottle for it and use *unsigned* encoding (which is large for negative numbers but more compact for positive ones): */
     {"motor",       0, UNSIGNED, .Ipredict = PREDICT(MINMOTOR), .Iencode = ENCODING(UNSIGNED_VB), .Ppredict = PREDICT(AVERAGE_2), .Pencode = ENCODING(SIGNED_VB), CONDITION(AT_LEAST_MOTORS_1)},
     /* Subsequent motors base their I-frame values on the first one, P-frame values on the average of last two frames: */
@@ -248,6 +249,18 @@ static const blackboxDeltaFieldDefinition_t blackboxMainFields[] = {
 
     /* Helicopter headspeed */
     {"headspeed",  -1, UNSIGNED, .Ipredict = PREDICT(0),    .Iencode = ENCODING(UNSIGNED_VB),   .Ppredict = PREDICT(PREVIOUS),      .Pencode = ENCODING(SIGNED_VB), CONDITION(ALWAYS)},
+
+    /* Extended 32bit debug */
+#ifdef USE_DEBUG32
+    {"debug32",     0, SIGNED,   .Ipredict = PREDICT(0),       .Iencode = ENCODING(SIGNED_VB),   .Ppredict = PREDICT(PREVIOUS),     .Pencode = ENCODING(SIGNED_VB), FLIGHT_LOG_FIELD_CONDITION_DEBUG},
+    {"debug32",     1, SIGNED,   .Ipredict = PREDICT(0),       .Iencode = ENCODING(SIGNED_VB),   .Ppredict = PREDICT(PREVIOUS),     .Pencode = ENCODING(SIGNED_VB), FLIGHT_LOG_FIELD_CONDITION_DEBUG},
+    {"debug32",     2, SIGNED,   .Ipredict = PREDICT(0),       .Iencode = ENCODING(SIGNED_VB),   .Ppredict = PREDICT(PREVIOUS),     .Pencode = ENCODING(SIGNED_VB), FLIGHT_LOG_FIELD_CONDITION_DEBUG},
+    {"debug32",     3, SIGNED,   .Ipredict = PREDICT(0),       .Iencode = ENCODING(SIGNED_VB),   .Ppredict = PREDICT(PREVIOUS),     .Pencode = ENCODING(SIGNED_VB), FLIGHT_LOG_FIELD_CONDITION_DEBUG},
+    {"debug32",     4, SIGNED,   .Ipredict = PREDICT(0),       .Iencode = ENCODING(SIGNED_VB),   .Ppredict = PREDICT(PREVIOUS),     .Pencode = ENCODING(SIGNED_VB), FLIGHT_LOG_FIELD_CONDITION_DEBUG},
+    {"debug32",     5, SIGNED,   .Ipredict = PREDICT(0),       .Iencode = ENCODING(SIGNED_VB),   .Ppredict = PREDICT(PREVIOUS),     .Pencode = ENCODING(SIGNED_VB), FLIGHT_LOG_FIELD_CONDITION_DEBUG},
+    {"debug32",     6, SIGNED,   .Ipredict = PREDICT(0),       .Iencode = ENCODING(SIGNED_VB),   .Ppredict = PREDICT(PREVIOUS),     .Pencode = ENCODING(SIGNED_VB), FLIGHT_LOG_FIELD_CONDITION_DEBUG},
+    {"debug32",     7, SIGNED,   .Ipredict = PREDICT(0),       .Iencode = ENCODING(SIGNED_VB),   .Ppredict = PREDICT(PREVIOUS),     .Pencode = ENCODING(SIGNED_VB), FLIGHT_LOG_FIELD_CONDITION_DEBUG},
+#endif
 };
 
 #ifdef USE_GPS
@@ -329,6 +342,9 @@ typedef struct blackboxMainState_s {
 #endif
     uint16_t rssi;
     uint16_t headspeed;
+#ifdef USE_DEBUG32
+    int32_t debug32[DEBUG32_VALUE_COUNT];
+#endif
 } blackboxMainState_t;
 
 typedef struct blackboxGpsState_s {
@@ -636,6 +652,12 @@ static void writeIntraframe(void)
     // Write helicopter headspeed
     blackboxWriteUnsignedVB(blackboxCurrent->headspeed);
 
+#ifdef USE_DEBUG32
+    // Write extended debug
+    if (testBlackboxCondition(FLIGHT_LOG_FIELD_CONDITION_DEBUG)) {
+        blackboxWriteSignedVBArray(blackboxCurrent->debug32, DEBUG32_VALUE_COUNT);
+    }
+#endif
     //Rotate our history buffers:
 
     //The current state becomes the new "before" state
@@ -776,6 +798,14 @@ static void writeInterframe(void)
     // Write helicopter headspeed with delta from last frame
     blackboxWriteSignedVB(blackboxCurrent->headspeed - blackboxLast->headspeed);
 
+#ifdef USE_DEBUG32
+    // Extended debug
+    if (testBlackboxCondition(FLIGHT_LOG_FIELD_CONDITION_DEBUG)) {
+        int32_t deltas[DEBUG32_VALUE_COUNT];
+        arraySubInt32(deltas, blackboxCurrent->debug32, blackboxLast->debug32, DEBUG32_VALUE_COUNT);
+        blackboxWriteSignedVBArray(deltas, DEBUG32_VALUE_COUNT);
+    }
+#endif
     //Rotate our history buffers
     blackboxHistory[2] = blackboxHistory[1];
     blackboxHistory[1] = blackboxHistory[0];
@@ -1098,6 +1128,13 @@ static void loadMainState(timeUs_t currentTimeUs)
     blackboxCurrent->servo[3] = servo[3];
 #endif
     blackboxCurrent->headspeed = getHeadSpeed();
+
+#ifdef USE_DEBUG32
+    // Extended debug
+    for (int i = 0; i < DEBUG32_VALUE_COUNT; i++) {
+        blackboxCurrent->debug32[i] = debug32[i];
+    }
+#endif
 #else
     UNUSED(currentTimeUs);
 #endif // UNIT_TEST
