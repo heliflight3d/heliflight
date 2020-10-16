@@ -137,6 +137,7 @@ bool isHeliSpooledUp(void)
     switch (govState)
     {
         case GS_THROTTLE_OFF:
+        case GS_THROTTLE_IDLE:
         case GS_PASSTHROUGH_SPOOLING_UP:
         case GS_GOVERNOR_SPOOLING_UP:
             return false;
