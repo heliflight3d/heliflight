@@ -98,14 +98,14 @@ void governorInitStandard(void)
     govState = GS_THROTTLE_OFF;
 }
 
-void changeGovStateTo(uint8_t futureState)
+static void changeGovStateTo(uint8_t futureState)
 {
     // Set the next governor state
     govState = futureState;
     stateEntryTime = millis();
 }
 
-bool headSpeedValid(void)
+static bool headSpeedValid(void)
 {
     // Check for valid headspeed signal
     if (headSpeed > 25) {
@@ -123,14 +123,14 @@ void governorUpdateStandard(void)
     float govMain = 0.0;
     float govTail = 0.0;
 
-    // If we're disarmed or no motors, reset the governor state and variables, then exit.
+    // If we're disarmed, reset the governor state and variables, then exit.
     //   This method does not preserve looptime while disarmed, but it is *safe*.
     // HF3D TODO:  Disarming in flight is catastrophic in many respects throughout the code.  Should it be?
-    if (!ARMING_FLAG(ARMED) || getMotorCount() < 1) {
+    if (!ARMING_FLAG(ARMED)) {
         changeGovStateTo(GS_THROTTLE_OFF);
         govMainPrevious = 0.0;
-        govOutput[0] = 0.0;
-        govOutput[1] = 0.0;
+        govOutput[GOV_MAIN] = 0.0;
+        govOutput[GOV_TAIL] = 0.0;
         return;
     }
 
@@ -564,8 +564,8 @@ void governorUpdateStandard(void)
         // default is bad!  abort!
         govState = GS_THROTTLE_OFF;
         govMainPrevious = 0.0;
-        govOutput[0] = 0.0;
-        govOutput[1] = 0.0;
+        govOutput[GOV_MAIN] = 0.0;
+        govOutput[GOV_TAIL] = 0.0;
         return;
     }
 
@@ -660,7 +660,7 @@ void governorUpdateStandard(void)
     }  // end of tail motor handling
 
 
-    govOutput[0] = govMain;
-    govOutput[1] = govTail;
+    govOutput[GOV_MAIN] = govMain;
+    govOutput[GOV_TAIL] = govTail;
 }
 
