@@ -126,6 +126,7 @@ typedef enum {
 #ifdef USE_ESC_SENSOR
     TABLE_ESC_SENSOR_PROTOCOL,
 #endif
+    TABLE_GOVERNOR_MODE,
 
     LOOKUP_TABLE_COUNT
 } lookupTableIndex_e;

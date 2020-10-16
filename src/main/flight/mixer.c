@@ -145,8 +145,8 @@ void mixerUpdate(void)
 
     governorUpdate();
 
-    mixerInput[MIXER_IN_GOVERNOR_MAIN] = govOutput[0];
-    mixerInput[MIXER_IN_GOVERNOR_TAIL] = govOutput[1];
+    mixerInput[MIXER_IN_GOVERNOR_MAIN] = getGovernorOutput(0);
+    mixerInput[MIXER_IN_GOVERNOR_TAIL] = getGovernorOutput(1);
 
     // Current cyclic deflection
     cyclicTotal = sqrtf(mixerInput[MIXER_IN_STABILIZED_ROLL] * mixerInput[MIXER_IN_STABILIZED_ROLL] +

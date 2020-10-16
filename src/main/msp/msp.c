@@ -1869,6 +1869,7 @@ static bool mspProcessOutCommand(int16_t cmdMSP, sbuf_t *dst)
 #endif
 
     case MSP_GOVERNOR:
+        sbufWriteU8(dst, governorConfig()->gov_mode);
         sbufWriteU16(dst, governorConfig()->gov_max_headspeed);
         sbufWriteU16(dst, governorConfig()->gov_spoolup_time);
         sbufWriteU16(dst, governorConfig()->gov_gear_ratio);
@@ -3055,6 +3056,7 @@ static mspResult_e mspProcessInCommand(mspDescriptor_t srcDesc, int16_t cmdMSP, 
 #endif
 
     case MSP_SET_GOVERNOR:
+        governorConfigMutable()->gov_mode = sbufReadU8(src);
         governorConfigMutable()->gov_max_headspeed = sbufReadU16(src);
         governorConfigMutable()->gov_spoolup_time = sbufReadU16(src);
         governorConfigMutable()->gov_gear_ratio = sbufReadU16(src);

@@ -477,6 +477,10 @@ static const char * const lookupTableEscSensorProtocol[] = {
 };
 #endif
 
+static const char * const lookupTableGovernorMode[] = {
+    "STANDARD", "MODEL1", "MODEL2", "MODEL3"
+};
+
 #define LOOKUP_TABLE_ENTRY(name) { name, ARRAYLEN(name) }
 
 const lookupTableEntry_t lookupTables[] = {
@@ -583,6 +587,7 @@ const lookupTableEntry_t lookupTables[] = {
 #ifdef USE_ESC_SENSOR
     LOOKUP_TABLE_ENTRY(lookupTableEscSensorProtocol),
 #endif
+    LOOKUP_TABLE_ENTRY(lookupTableGovernorMode),
 };
 
 #undef LOOKUP_TABLE_ENTRY
@@ -827,6 +832,7 @@ const clivalue_t valueTable[] = {
 #endif // USE_BEEPER
 
 // PG_GOVERNOR_CONFIG
+    { "gov_mode",                   VAR_UINT8  |  MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_GOVERNOR_MODE }, PG_GOVERNOR_CONFIG, offsetof(governorConfig_t, gov_mode) },
     { "gov_max_headspeed",          VAR_UINT16 |  MASTER_VALUE,  .config.minmaxUnsigned = { 0, 10000 }, PG_GOVERNOR_CONFIG, offsetof(governorConfig_t, gov_max_headspeed) },
     { "gov_gear_ratio",             VAR_UINT16 |  MASTER_VALUE,  .config.minmaxUnsigned = { 1000, 30000 }, PG_GOVERNOR_CONFIG, offsetof(governorConfig_t, gov_gear_ratio) },
     { "gov_p_gain",                 VAR_UINT16 |  MASTER_VALUE,  .config.minmaxUnsigned = { 0, 500 }, PG_GOVERNOR_CONFIG, offsetof(governorConfig_t, gov_p_gain) },
