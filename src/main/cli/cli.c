@@ -2345,7 +2345,7 @@ static void cliMixer(const char *cmdName, char *cmdline)
             value = atoi(args[VALUE]);
         }
         if (index < MIXER_IN_NONE || index >= MIXER_IN_COUNT ||
-            value < -1000 || value > 1001) {
+            value < MIXER_OVERRIDE_MIN || value > MIXER_OVERRIDE_OFF) {
             cliShowArgumentRangeError(cmdName, NULL, 0, 0);
             return;
         }
