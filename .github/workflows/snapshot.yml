@@ -27,8 +27,7 @@ jobs:
       run: make arm_sdk_install
 
     - name: Set build variables
-      run: |
-        echo ::set-env name=release::"${GITHUB_REF##*/}"
+      run: echo "release=${GITHUB_REF##*/}" >> ${GITHUB_ENV}
 
     - name: Build HEX files for unified targets
       run: make unified SUFFIX=-${{ env.release }}
