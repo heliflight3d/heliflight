@@ -5,7 +5,22 @@ Heliflight 3D is flight controller software (firmware) used to fly single-rotor 
 
 This fork differs from Baseflight and Cleanflight in that it focuses on 3D flight performance for helicopters. Heliflight 3D was forked from Betaflight 4.2.
 
-# Important Notice: During the initial development period, Heliflight 3D is *NOT* optimized for slower hardware.  It is highly suggested to use a STM32F7 based flight controller.
+## Important Notice: During the initial development period, Heliflight 3D is *NOT* optimized for slower hardware.  It is highly suggested to use a STM32F7 based flight controller.
+
+
+### Installation for End-Users:
+
+Please see the "Releases" page on this Github repo to download the latest official release for your FC board:
+* [Click here to go to Releases](https://github.com/heliflight3d/heliflight/releases)
+
+Please ignore any snapshots on this page (github is showing them automatically).
+
+### Installation for Beta-testers:
+
+Please see the "Actions" tab on this Github repo to download the latest build snapshot for your FC board:
+* [Click here to go to the Actions tab](https://github.com/heliflight3d/heliflight/actions)
+
+Please note that build snapshots are available for beta-testing, and are otherwise _not_ supported.
 
 
 ## Betaflight News
