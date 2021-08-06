@@ -23,6 +23,8 @@ All users are Beta-testers. See above.
 
 Please see the Heliflight 3D Wiki: https://github.com/James-T1/heliflight-3d/wiki
 
+You can also find more information on RCGroups.com: https://www.rcgroups.com/forums/showthread.php?3535457-Introducing-the-Heliflight-3D-%28HF3D%29-open-source-Helicopter-flight-controller-%28FBL%29
+
 
 ## Betaflight News
 
