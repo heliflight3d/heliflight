@@ -7,20 +7,21 @@ This fork differs from Baseflight and Cleanflight in that it focuses on 3D fligh
 
 ## Important Notice: During the initial development period, Heliflight 3D is *NOT* optimized for slower hardware.  It is highly suggested to use a STM32F7 based flight controller.
 
+### Heliflight has a Discord server. You can find it here: https://discord.gg/3Ys2Z6W
 
 ### Installation for End-Users:
 
-Please see the "Releases" page on this Github repo to download the latest official release for your FC board:
-* [Click here to go to Releases](https://github.com/heliflight3d/heliflight/releases)
+Firmware must be built by the user. Or if you have a standard flight controller board that supports a unified target like STM32F7X2, you might ask a developer nicely on Discord for a compiled version. But honestly, 10% the fun is saying you compiled it yourself straight from the source code.
 
-Please ignore any snapshots on this page (github is showing them automatically).
+See more here: https://github.com/James-T1/heliflight-3d/wiki/How-to-Build-Heliflight-3D
 
 ### Installation for Beta-testers:
 
-Please see the "Actions" tab on this Github repo to download the latest build snapshot for your FC board:
-* [Click here to go to the Actions tab](https://github.com/heliflight3d/heliflight/actions)
+All users are Beta-testers. See above.
 
-Please note that build snapshots are available for beta-testing, and are otherwise _not_ supported.
+### More information:
+
+Please see the Heliflight 3D Wiki: https://github.com/James-T1/heliflight-3d/wiki
 
 
 ## Betaflight News
@@ -53,21 +54,27 @@ This does not mean that it won't be possible to use these flight controllers aft
 
 ## Features
 
-Betaflight has the following features:
+To simplify the codebase and reduce the potential for errors, we have begun the work of stripping out the miniquad-specific code in Betaflight and implementing helicopter specific features in their place. The helicopter-specific features include:
 
-* Multi-color RGB LED strip support (each LED can be a different color using variable length WS2811 Addressable RGB strips - use for Orientation Indicators, Low Battery Warning, Flight Mode Status, Initialization Troubleshooting, etc)
-* DShot (150, 300, 600 and 1200), Multishot, and Oneshot (125 and 42) motor protocol support
-* Blackbox flight recorder logging (to onboard flash or external microSD card where equipped)
-* Support for targets that use the STM32 F7, F4 and F3 processors
-* PWM, PPM, and Serial (SBus, SumH, SumD, Spektrum 1024/2048, XBus, etc) RX connection with failsafe detection
-* Multiple telemetry protocols (CSRF, FrSky, HoTT smart-port, MSP, etc)
-* RSSI via ADC - Uses ADC to read PWM RSSI signals, tested with FrSky D4R-II, X8R, X4R-SB, & XSR
-* OSD support & configuration without needing third-party OSD software/firmware/comm devices
-* In-flight manual PID tuning and rate adjustment
-* Rate profiles and in-flight selection of them
-* Configurable serial ports for Serial RX, Telemetry, ESC telemetry, MSP, GPS, OSD, Sonar, etc - Use most devices on any port, softserial included
-* VTX support for Unify Pro and IRC Tramp
-* and MUCH, MUCH more.
+* High-speed predictive main motor governor using BlHeli32 ESCs with BiDirectional DSHOT
+* Support for motor-driven, variable pitch, and combination MD+VP tails
+* Full configuration via Transmitter telemetry (initially FrSky LUA support)
+* Configurable Bailout/Rescue function
+* Tail pre-comp for collective changes / piro compensation / collective governor boost / etc.
+* Re-work the Betaflight configurator to support the HF3D functionality as necessary
+
+All of the great stuff that exists in Betaflight that is relevant to helicopters remains:
+
+* Stabilization modes
+* 1-wire Bi-directional DSHOT w/ RPM telemetry
+* DSHOT telemetry output support
+* ESC configuration with BLHeli passthrough
+* Configuration via Transmitter telemetry
+* Blackbox logging and vibration analysis
+* Excellent RC input filtering/smoothing
+* Vibration filtering
+* 1-wire RX interface w/ telemetry (FPORT, etc.)
+* GPS Rescue could eventually work
 
 ## Installation & Documentation
 
@@ -83,9 +90,9 @@ Etiquette: Don't ask to ask and please wait around long enough for a reply - som
 
 ## Configuration Tool
 
-To configure Betaflight you should use the Betaflight-configurator GUI tool (Windows/OSX/Linux) which can be found here:
+To configure Heliflight you should use the Heliflight-configurator GUI tool (Windows/OSX/Linux) which can be found here:
 
-https://github.com/betaflight/betaflight-configurator/releases/latest
+https://github.com/heliflight/heliflight-configurator
 
 ## Contributing
 
@@ -100,8 +107,8 @@ Contributions are welcome and encouraged. You can contribute in many ways:
 
 The best place to start is the Betaflight Slack (registration [here](https://slack.betaflight.com/)). Next place is the github issue tracker:
 
-https://github.com/betaflight/betaflight/issues
-https://github.com/betaflight/betaflight-configurator/issues
+https://github.com/heliflight/heliflight/issues
+https://github.com/heliflight/heliflight-configurator/issues
 
 Before creating new issues please check to see if there is an existing one, search first otherwise you waste people's time when they could be coding instead!
 
